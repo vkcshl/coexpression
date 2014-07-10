@@ -1,0 +1,4 @@
+#group-name	pe	Plant Expression
+#command-set	scripts/(.*).pl	pe
+#command-set	scripts/(.*)\.r$	pe
+#command-set	scripts/(.*)\.py	pe
