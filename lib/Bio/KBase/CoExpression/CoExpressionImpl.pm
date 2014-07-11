@@ -25,6 +25,7 @@ It will serve queries for tissue and condition specific gene expression co-expre
 =cut
 
 #BEGIN_HEADER
+use Bio::KBase::Workflow::KBW;
 #END_HEADER
 
 sub new
@@ -34,6 +35,28 @@ sub new
     };
     bless $self, $class;
     #BEGIN_CONSTRUCTOR
+    my %params;
+    my @list = qw(ujs_url awe_url shock_url ws_url);
+    if ((my $e = $ENV{KB_DEPLOYMENT_CONFIG}) && -e $ENV{KB_DEPLOYMENT_CONFIG}) {  
+      my $service = $ENV{KB_SERVICE_NAME};
+      if (defined($service)) {
+        my $c = Config::Simple->new();
+        $c->read($e);
+        for my $p (@list) {
+          my $v = $c->param("$service.$p");
+          if ($v) {
+            $params{$p} = $v;
+          }
+        }
+      }
+    }
+ 
+    # set default values for testing
+    $params{'ujs_url'} = 'http://localhost:7083' if ! defined $params{'ujs_url'};
+    $params{'awe_url'} = 'http://localhost:7080' if ! defined $params{'awe_url'};
+    $params{'shock_url'} = 'http://kbase.us/services/shock-api' if ! defined $params{'shock_url'};
+    $params{'ws_url'} = 'https://kbase.us/services/ws/' if ! defined $params{'ws_url'};
+    $self->{_config} = \%params;
     #END_CONSTRUCTOR
 
     if ($self->can('_init_instance'))
@@ -113,6 +136,7 @@ sub filter_genes
     my $ctx = $Bio::KBase::CoExpression::Service::CallContext;
     my($job_id);
     #BEGIN filter_genes
+    $job_id = Bio::KBase::Workflow::KBW::run_async($self, $ctx, $args);
     #END filter_genes
     my @_bad_returns;
     (ref($job_id) eq 'ARRAY') or push(@_bad_returns, "Invalid type for return variable \"job_id\" (value was \"$job_id\")");
@@ -195,6 +219,7 @@ sub const_coex_net_clust
     my $ctx = $Bio::KBase::CoExpression::Service::CallContext;
     my($job_id);
     #BEGIN const_coex_net_clust
+    $job_id = Bio::KBase::Workflow::KBW::run_async($self, $ctx, $args);
     #END const_coex_net_clust
     my @_bad_returns;
     (ref($job_id) eq 'ARRAY') or push(@_bad_returns, "Invalid type for return variable \"job_id\" (value was \"$job_id\")");
