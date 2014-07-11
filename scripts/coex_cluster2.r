@@ -110,7 +110,7 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE))
     suppressPackageStartupMessages(library('ape', quiet = TRUE))
     suppressPackageStartupMessages(library('reshape', quiet = TRUE))
-    allowWGCNAThreads()
+    #allowWGCNAThreads()
     dissimilarity = 1 - adjmat
     distance = as.dist(dissimilarity)
     hclusters = hclust(distance)
@@ -120,7 +120,7 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   } else if (method == 'WGCNA' || method == 'w') {
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE))
     suppressPackageStartupMessages(library('reshape', quiet = TRUE))
-    allowWGCNAThreads()
+    #allowWGCNAThreads()
     TOM = TOMsimilarity(adjmat, verbose = 0)
     dissTOM = 1 - TOM
     geneTree = flashClust(as.dist(dissTOM), method = "average")

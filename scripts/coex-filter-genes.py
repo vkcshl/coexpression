@@ -84,7 +84,7 @@ def filter_expression (args) :
 
     ###
     # execute filtering
-    flt_cmd = 'coex_filter -i ' + args.exp_fn + ' -s ' + args.rp_smp_fn
+    flt_cmd = 'coex_filter -i ' + args.exp_fn 
     if (args.method     is not None): flt_cmd += (' -m ' + args.method)
     if (args.p_value    is not None): flt_cmd += (' -p ' + args.p_value)
     if (args.num_genes  is not None): flt_cmd += (' -n ' + args.num_genes)
