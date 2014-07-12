@@ -91,6 +91,7 @@ def filter_expression (args) :
     if (args.flt_out_fn is not None): flt_cmd += (' -o ' + args.flt_out_fn)
     if (args.rp_smp_fn  is not None): flt_cmd += (' -s ' + args.rp_smp_fn)
     subprocess.call(flt_cmd, shell = True)
+    print "COMMAND:{}".format(flt_cmd)
    
     ###
     # put it back to workspace
