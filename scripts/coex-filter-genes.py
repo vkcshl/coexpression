@@ -70,7 +70,11 @@ def filter_expression (args) :
     cif = open(args.exp_fn, 'w')
     header = ",".join([s['data']['source_id'] for s in samples])
     cif.write(header + "\n")
-    gids = samples[0]['data']['expression_levels'].keys()  # each sample has same gids
+
+    # find common gene list
+    gids = set(samples[0]['data']['expression_levels'].keys())  # each sample has same gids
+    for s in samples:
+        gids = gids.intersection(set(s['data']['expression_levels'].keys()))
     for gid in sorted(gids):
         line = gid + ","
         line += ",".join([str(s['data']['expression_levels'][gid]) for s in samples])
@@ -91,7 +95,7 @@ def filter_expression (args) :
     if (args.flt_out_fn is not None): flt_cmd += (' -o ' + args.flt_out_fn)
     if (args.rp_smp_fn  is not None): flt_cmd += (' -s ' + args.rp_smp_fn)
     subprocess.call(flt_cmd, shell = True)
-    print "COMMAND:{}".format(flt_cmd)
+    #print "COMMAND:{}".format(flt_cmd)
    
     ###
     # put it back to workspace
