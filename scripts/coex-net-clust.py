@@ -14,36 +14,36 @@ from biokbase.workspace.client import Workspace
 
 desc1 = '''
 NAME
-      coex-net-clust -- Construct coexpression network and clusters
+      coex-net-clust -- Construct coexpression network and identify clusters
 
-SYNOPSIS      
+SYNOPSIS
+      coex-net-clust -u workspace_url -w workspace_id  -i input_object_ID -c cutoff -n method_for_building_network -m method_for_identify_clusters -k number_of_clusters
+
 '''
 
 desc2 = '''
 DESCRIPTION
-      Check status of probabilistic annotation jobs submitted by the user.  For
-      each job, information about the job is displayed.  A job that has completed
-      is then deleted from the system.
 
-      The --jobID optional argument is the identifier of a specific job to
-      check.
+  This command provides the function to build coexpression network and identify the functional modules among it.
+  A functional module is a network cluster with enrichment of certain biological function. const_coex_net_clust first construct coexpression network. Then, it identifys the clusters among the network. Finally, it identifys the GeneOntology enrichment for the genes in each cluster.
 
-      The ujs-url optional argument specifies an alternate URL for the user and
-      job state service.
+
 '''
 
 desc3 = '''
 EXAMPLES
-      Networks with PCC and hclust
-      > coex-net-clust
-      
-      Filter genes with LOR
-      > coex-net-clust 
+      Using PCC to build coexpression network. Using hierarchical clustering to identify the clusters among the network. Enrichemnt test of gene ontology terms for each cluster will be automatically calculated.
+      > coex-net-clust --ws_url='https://kbase.us/services/ws' --ws_id='plane83:Fei_coex_demo'  --in_id=3 --out_id=10  --cut_off=0.8 --net_method=simple --clust_method=hclust  --num_module=15 
+      > coex-net-clust -u='https://kbase.us/services/ws' -w='plane83:Fei_coex_demo'  -i=3 --out_id=10  -c=0.8 -n=simple -m=hclust  -k=15 
+     
+      Using WGCNA to build coexpression network and to identify the clusters among the network. Enrichemnt test of gene ontology terms for each cluster will be automatically calculated.
+      > coex-net-clust -u='https://kbase.us/services/ws' -w='plane83:Fei_coex_demo'  -i=3 --out_id=10  -c=0.8 -n=WGCNA -m=WGCNA  -k=15 
 
 SEE ALSO
       coex_filter
 
 AUTHORS
+Shinjae Yoo, Gang Fang, Fei He, Daifeng Wang.
       
 '''
 class Node:
@@ -287,7 +287,7 @@ if __name__ == "__main__":
     parser.add_argument('-u', '--ws_url', help='Workspace url', action='store', dest='ws_url', default='https://kbase.us/services/ws')
     parser.add_argument('-w', '--ws_id', help='Workspace id', action='store', dest='ws_id', default=None, required=True)
     parser.add_argument('-i', '--in_id', help='Input Series object id', action='store', dest='inobj_id', default=None, required=True)
-    parser.add_argument('-o', '--out_id', help='Output Series object id', action='store', dest='outobj_id', default=None, required=True)
+    parser.add_argument('-o', '--out_id', help='Output network object id', action='store', dest='outobj_id', default=None, required=True)
     parser.add_argument('-m', '--clust_method', help='Clustering method (\'hclust\' for hierachical clustering or \'WGCNA\' for WGCNA method', action='store', dest='cmethod', default='hclust')
     parser.add_argument('-n', '--net_method', help='Network construction method (\'simple\' for PCC or \'WGCNA\' for WGCNA method', action='store', dest='nmethod', default='simple')
     parser.add_argument('-c', '--cut_off', help='The edge cut-off value', action='store', dest='cut_off', default=None)
