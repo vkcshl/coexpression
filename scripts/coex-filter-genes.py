@@ -7,6 +7,7 @@ import traceback
 import sys
 import ctypes
 import subprocess
+from subprocess import Popen, PIPE
 import os
 from optparse import OptionParser
 from biokbase.workspace.client import Workspace
@@ -88,14 +89,29 @@ def filter_expression (args) :
 
     ###
     # execute filtering
-    flt_cmd = 'coex_filter -i ' + args.exp_fn 
-    if (args.method     is not None): flt_cmd += (' -m ' + args.method)
-    if (args.p_value    is not None): flt_cmd += (' -p ' + args.p_value)
-    if (args.num_genes  is not None): flt_cmd += (' -n ' + args.num_genes)
-    if (args.flt_out_fn is not None): flt_cmd += (' -o ' + args.flt_out_fn)
-    if (args.rp_smp_fn  is not None): flt_cmd += (' -s ' + args.rp_smp_fn)
-    subprocess.call(flt_cmd, shell = True)
-    #print "COMMAND:{}".format(flt_cmd)
+    flt_cmd_lst = ['coex_filter', "-i", args.exp_fn]
+    if (args.method     is not None): 
+        flt_cmd_lst.append('-m')
+        flt_cmd_lst.append(args.method)
+    if (args.p_value    is not None): 
+        flt_cmd_lst.append('-p')
+        flt_cmd_lst.append(args.p_value)
+    if (args.num_genes  is not None): 
+        flt_cmd_lst.append('-n')
+        flt_cmd_lst.append(args.num_genes)
+    if (args.flt_out_fn is not None): 
+        flt_cmd_lst.append('-o')
+        flt_cmd_lst.append(args.flt_out_fn)
+    if (args.rp_smp_fn  is not None): 
+        flt_cmd_lst.append('-s')
+        flt_cmd_lst.append(args.rp_smp_fn)
+
+    p1 = Popen(flt_cmd_lst, stdout=PIPE)
+    out_str = p1.communicate()
+    # print output message for error tracking
+    if out_str[0] is not None : print out_str[0]
+    if out_str[1] is not None : print >> sys.stderr, out_str[1]
+    flt_cmd = " ".join(flt_cmd_lst)
    
     ###
     # put it back to workspace
