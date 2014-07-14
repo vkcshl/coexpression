@@ -21,24 +21,22 @@ SYNOPSIS
 
 desc2 = '''
 DESCRIPTION
-      Check status of probabilistic annotation jobs submitted by the user.  For
-      each job, information about the job is displayed.  A job that has completed
-      is then deleted from the system.
-
-      The --jobID optional argument is the identifier of a specific job to
-      check.
-
-      The ujs-url optional argument specifies an alternate URL for the user and
-      job state service.
+  coex-filter-genes provides the function to identify differentially expressed genes given an expression series/experiment. An expression series/experiment contains a list of expression samples. A expression sample is the measurement of mRNA abundance in a biological sample. The design of expression profiling usually includes replicates. The replicates allows us to differ the non-relevent expression variation and the relevent expression variation.
+  The replicate information is manully extracted by KBase developers. Only a part of samples has been assigned to a replicate group. For those samples without an assignment, the variation of its expression abundance is used directly.
+  filter_genes now has two methods to identify differentially expressed genes: ANOVA and lor(from limma r package). The output of this function is a list of genes
+  All the data is feteched from KBase workspace. The output is stored back into KBase workspace.
 '''
 
 desc3 = '''
 EXAMPLES
       Filter genes with ANOVA
-      > coex-filter-genes
+      > coex-filter-genes --ws_url='https://kbase.us/services/ws' --ws_id=KBasePublicExpression  --in_id=2431 -out_id=1 --filter_method=anova --p_value=0.01 
+      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -out_id=1 -m=anova -p=0.01 
       
       Filter genes with LOR
-      > coex-filter-genes 
+      > coex-filter-genes --ws_url='https://kbase.us/services/ws' --ws_id=KBasePublicExpression  --in_id=2431 -out_id=1 --filter_method=lor --p_value=0.01 
+      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -out_id=1 -m=lor -p=0.01
+
 
 SEE ALSO
       coex_filter
