@@ -7,6 +7,7 @@ import traceback
 import sys
 import ctypes
 import subprocess
+from subprocess import Popen, PIPE
 import os
 from optparse import OptionParser
 from biokbase.workspace.client import Workspace
@@ -162,21 +163,42 @@ def net_clust (args) :
 
     ###
     # generate network and cluster
-    net_cmd = 'coex_net -i ' + args.exp_fn 
-    if (args.nmethod    is not None): net_cmd += (' -m ' + args.nmethod)
-    if (args.cut_off    is not None): net_cmd += (' -c ' + args.cut_off)
-    if (args.net_fn     is not None): net_cmd += (' -o ' + args.net_fn)
-    print net_cmd
-    subprocess.call(net_cmd, shell = True)
+    net_cmd_lst = ['coex_net', '-i', args.exp_fn]
+    if (args.nmethod    is not None): 
+        net_cmd_lst.append("-m")
+        net_cmd_lst.append(args.nmethod)
+    if (args.cut_off    is not None): 
+        net_cmd_lst.append("-c")
+        net_cmd_lst.append(args.cut_off)
+    if (args.net_fn     is not None):
+        net_cmd_lst.append("-o")
+        net_cmd_lst.append(args.net_fn)
+    p1 = Popen(net_cmd_lst, stdout=PIPE)
+    out_str = p1.communicate()
+    if out_str[0] is not None : print out_str[0]
+    if out_str[1] is not None : print >> sys.stderr, out_str[1]
+    net_cmd = " ".join(net_cmd_lst)
    
    
-    clust_cmd = 'coex_cluster2 -i ' + args.exp_fn 
-    if (args.cmethod    is not None): clust_cmd += (' -c ' + args.cmethod)
-    if (args.nmethod    is not None): clust_cmd += (' -n ' + args.nmethod)
-    if (args.k          is not None): clust_cmd += (' -s ' + args.k)
-    if (args.clust_fn   is not None): clust_cmd += (' -o ' + args.clust_fn)
-    print clust_cmd
-    subprocess.call(clust_cmd, shell = True)
+    clust_cmd_lst = ['coex_cluster2', '-i', args.exp_fn]
+    if (args.cmethod    is not None):
+        clust_cmd_lst.append("-c")
+        clust_cmd_lst.append(args.cmethod)
+    if (args.nmethod    is not None):
+        clust_cmd_lst.append("-n")
+        clust_cmd_lst.append(args.nmethod)
+    if (args.k          is not None):
+        clust_cmd_lst.append("-s")
+        clust_cmd_lst.append(args.k)
+    if (args.clust_fn   is not None):
+        clust_cmd_lst.append("-o")
+        clust_cmd_lst.append(args.clust_fn)
+    p1 = Popen(clust_cmd_lst, stdout=PIPE)
+    out_str = p1.communicate()
+    if out_str[0] is not None : print out_str[0]
+    if out_str[1] is not None : print >> sys.stderr, out_str[1]
+    clust_cmd = " ".join(clust_cmd_lst)
+
    
     ###
     # Create network object
