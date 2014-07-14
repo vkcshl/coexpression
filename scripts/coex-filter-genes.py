@@ -17,6 +17,7 @@ NAME
       coex-filter-genes -- select differentially expressed genes
 
 SYNOPSIS      
+      coex-filter-genes -u workspace_url -w workspace_id  -i input_object_ID -o output_object_ID -m filtering_method -p p=vaule
 '''
 
 desc2 = '''
@@ -31,18 +32,18 @@ desc3 = '''
 EXAMPLES
       Filter genes with ANOVA
       > coex-filter-genes --ws_url='https://kbase.us/services/ws' --ws_id=KBasePublicExpression  --in_id=2431 -out_id=1 --filter_method=anova --p_value=0.01 
-      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -out_id=1 -m=anova -p=0.01 
+      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -o=1 -m=anova -p=0.01 
       
       Filter genes with LOR
       > coex-filter-genes --ws_url='https://kbase.us/services/ws' --ws_id=KBasePublicExpression  --in_id=2431 -out_id=1 --filter_method=lor --p_value=0.01 
-      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -out_id=1 -m=lor -p=0.01
+      > coex-filter-genes -u='https://kbase.us/services/ws' -w=KBasePublicExpression  -i=2431 -o=1 -m=lor -p=0.01
 
 
 SEE ALSO
       coex_filter
 
 AUTHORS
-      
+Shinjae Yoo, Gang Fang, Fei He, Daifeng Wang.
 '''
 
 
