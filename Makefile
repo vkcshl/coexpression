@@ -174,11 +174,11 @@ build-docs:
 
 deploy-service: deploy-cfg
 	if [ ! -d $(SERVICE_DIR) ] ; then mkdir -p $(SERVICE_DIR) ; fi
-	tpage $(SERVICE_TPAGE_ARGS) service/start_service.tt > $(SERVICE_DIR)/start_service; \
+	tpage $(TPAGE_ARGS) service/start_service.tt > $(SERVICE_DIR)/start_service; \
 	chmod +x $(SERVICE_DIR)/start_service; \
-	tpage $(SERVICE_TPAGE_ARGS) service/stop_service.tt > $(SERVICE_DIR)/stop_service; \
+	tpage $(TPAGE_ARGS) service/stop_service.tt > $(SERVICE_DIR)/stop_service; \
 	chmod +x $(SERVICE_DIR)/stop_service; \
-	tpage $(SERVICE_TPAGE_ARGS) service/process.tt > $(SERVICE_DIR)/process.$(SERVICE_NAME); \
+	tpage $(TPAGE_ARGS) service/process.tt > $(SERVICE_DIR)/process.$(SERVICE_NAME); \
 	chmod +x $(SERVICE_DIR)/process.$(SERVICE_NAME); 
 	mkdir -p $(SERVICE_DIR)/awf
 	cat deploy.cfg service.cfg > $(SERVICE_DIR)/service.cfg;
