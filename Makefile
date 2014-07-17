@@ -1,6 +1,7 @@
 TOP_DIR = ../..
-DEPLOY_RUNTIME = /kb/runtime
-TARGET = /kb/deployment
+DEPLOY_RUNTIME=/kb/runtime
+TARGET ?= /kb/deployment
+include $(TOP_DIR)/tools/Makefile.common
 SERVICE_SPEC = CoExpression.spec
 SERVICE_NAME = CoExpression
 SERVICE_PSGI_FILE = $(SERVICE_NAME).psgi
