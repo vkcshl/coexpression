@@ -28,7 +28,7 @@ Co-Expression Service APIs
  2. Retrieval of the expression values for given GEO sample ID list.  
  3. For given expression values tables, it computes co-expression clusters or network (CLI only).
 
-It will serve queries for tissue and condition specific gene expression co-expression network for biologically interesting genes/samples. Users can search differentially expressed genes in different tissues or in numerous experimental conditions or treatments (e.g various biotic or abiotic stresses). Currently the metadata annotation is provided for a subset of gene expression experiments from the NCBI GEO microarray experiments for Arabidopsis and Poplar. The samples of these experiments are manually annotated using plant ontology (PO) [http://www.plantontology.org/] and environment ontology (EO) [http://obo.cvs.sourceforge.net/viewvc/obo/obo/ontology/phenotype/environment/environment_ontology.obo]
+It will serve queries for tissue or condition specific co-expression network for biologically interesting genes/samples. Users can search differentially expressed genes in different tissues or in numerous experimental conditions or treatments (e.g various biotic or abiotic stresses). Currently the metadata annotation is provided for a subset of gene expression experiments from the NCBI GEO microarray experiments for Arabidopsis and Poplar. The samples of these experiments are manually annotated using plant ontology (PO) [http://www.plantontology.org/] and environment ontology (EO) [http://obo.cvs.sourceforge.net/viewvc/obo/obo/ontology/phenotype/environment/environment_ontology.obo]
 
 
 =cut
@@ -119,7 +119,10 @@ FilterGenesParams is a reference to a hash where the following keys are defined:
 
 =item Description
 
-
+Description of filter_genes: 
+filter_genes provides the function to identify differentially expressed genes given an expression series/experiment. An expression series/experiment contains a list of expression samples. A expression sample is the measurement of mRNA abundance in a biological sample. The design of expression profiling usually includes replicates. The replicates allows us to differ the non-relevent expression variation and the relevent expression variation.
+The replicate information is manully extracted by KBase developers. Only a part of samples has been assigned to a replicate group. For those samples without an assignment, the variation of its expression abundance is used directly.
+filter_genes now has two methods to identify differentially expressed genes: ANOVA and lor(from limma r package). The output of this function is a list of genes
 
 =back
 
@@ -216,7 +219,9 @@ ConstCoexNetClustParams is a reference to a hash where the following keys are de
 
 =item Description
 
-
+Description of const_coex_net_clust
+const_coex_net_clust provides the function to build coexpression network and identify the functional modules among it.
+A functional module is a network cluster with enrichment of certain biological function. const_coex_net_clust first construct coexpression network. Then, it identifys the clusters among the network. Finally, it identifys the GeneOntology enrichment for the genes in each cluster.
 
 =back
 
@@ -334,7 +339,7 @@ sub _validate_version {
 
 =item Description
 
-series object id
+num_gene is user for specify how many differentially expressed genes are needed
 
 
 =item Definition
@@ -379,7 +384,7 @@ num_genes has a value which is a string
 
 =item Description
 
-series object id
+num_modules is used to define the number of modules need to be identified from the network
 
 
 =item Definition
