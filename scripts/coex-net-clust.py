@@ -33,11 +33,11 @@ DESCRIPTION
 desc3 = '''
 EXAMPLES
       Using PCC to build coexpression network. Using hierarchical clustering to identify the clusters among the network. Enrichemnt test of gene ontology terms for each cluster will be automatically calculated.
-      > coex-net-clust --ws_url='https://kbase.us/services/ws' --ws_id='plane83:Fei_coex_demo'  --in_id=3 --out_id=10  --cut_off=0.8 --net_method=simple --clust_method=hclust  --num_module=15 
-      > coex-net-clust -u='https://kbase.us/services/ws' -w='plane83:Fei_coex_demo'  -i=3 --out_id=10  -c=0.8 -n=simple -m=hclust  -k=15 
+      > coex-net-clust --ws_url 'https://kbase.us/services/ws' --ws_id 'plane83:Fei_coex_demo'  --in_id 3 --out_id 10  --cut_off 0.8 --net_method simple --clust_method hclust  --num_module 15 
+      > coex-net-clust -u 'https://kbase.us/services/ws' -w 'plane83:Fei_coex_demo'  -i 3 --out_id 10  -c 0.8 -n simple -m hclust  -k 15 
      
       Using WGCNA to build coexpression network and to identify the clusters among the network. Enrichemnt test of gene ontology terms for each cluster will be automatically calculated.
-      > coex-net-clust -u='https://kbase.us/services/ws' -w='plane83:Fei_coex_demo'  -i=3 --out_id=10  -c=0.8 -n=WGCNA -m=WGCNA  -k=15 
+      > coex-net-clust -u 'https://kbase.us/services/ws' -w 'plane83:Fei_coex_demo'  -i 3 --out_id 10  -c 0.8 -n WGCNA -m WGCNA  -k 15 
 
 SEE ALSO
       coex_filter
