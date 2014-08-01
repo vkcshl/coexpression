@@ -1,0 +1,75 @@
+FAQ for KBase plant coexpression service
+ 
+This document includes: How to use plant coexpression service in KBase and the basic rationale for plant coexpression service
+ 
+ 
+Introduction to KBase plant coexpression service
+Coexpression network is widely as a strategy in plant research during the last decade due to the advances in measuring gene expression abundance in a large scale. Various tools/websites have been developed for the construction of coexpression networks. KBase not only provides a system to incorporate those tools but also develops a comprehensive user-friendly pipeline for the users to analyze their data.
+ 
+Working with KBase, step by step
+This document assumes you are already familiar with KBase system. If not, please read the KBase Narrative Interface Quick Start at http://kbase.us/for-users/narrative-quick-start/
+ 
+ 
+1. Data sources
+1.1 Expression data stored in KBase central store
+KBase central store host the public gene expression datasets, which are imported from NCBI Gene Expression Omnibus (GEO).
+You may find the schema of KBase expression data here: http://kbase.us/developer-zone/tutorials/apis/the-kbase-central-data-model/cdm-er-browser/
+You may find the detail of KBase expression data here: http://kbase.us/developer-zone/services/
+All the expression data stored in central store can be directly browsed or downloaded from KBase public Expression workspace: http://narrative.kbase.us/functional-site/#/ws/objtable/KBasePublicExpression
+ 
+1.2 Expression data uploaded by users
+Through the KBase data uploader (http://kbase.us/services/docs/uploader/uploader.html#), users can upload their expression data into their private workspace.
+ 
+1.3 Expression data stored in workspace
+Besides KBase public expression workspace, you may also retrieve data from other workspace, which has been shared with you (read permission).
+ 
+ 
+2.  Identify differential expressed genes(DEG)
+After you retrieve an expression dataset from workspace or upload your own expression data, you’ll get an expression typed object. You need the expression series typed object (e.g. kb|series.433) for construction of coexpression networks.
+We recommend at least 12 samples are included in the dataset you’ll be using for construction of coexpression network.
+ 
+2.1 Identify DEG for datasets with replicate information
+KBase expression team annotates the expression samples with replicate groups. This information is critical for identification of biological meaningful DEG.
+Two methods have been implemented in the pipeline: Analysis of variance (ANOVA) and log odds ratio(LOR from Limma package). We’ll implement more methods, such as DESeq in the future.
+ 
+2.2 Identify DEG for datasets without replicate information
+Annotation of replicate group is a time-consuming job. By far only a small part of the datasets stored in central store has replicate information. The users will be able to define their own replicate group (not available currently). For those dataset without replicate information, a standard deviation is used to define differential expression.
+ 
+ 
+3. Construct co-expression network and clusters.
+3.1 Methods for building networks.
+Given the name of an expression series typed object, you may construct coexpression networks. Currently, we implemented the weighted correlation network analysis(WGCNA) because it is the most widely used approach for coexpression networks. We also implemented a Pearson Correlation Coefficient based method (simple) for users to build a ‘quick’ coexpression network.
+After you build a coexpression network for your expression series dataset, you’ll get a network typed object, which stores the network data.
+ 
+3.2 Methods for identification of network clusters
+Although various methods are existed for detecting network cluster, we only implemented two, the WGCNA and the hierarchical clustering (hclust) because they are widely used by the community. We’ll implement more methods in the near future. Users are welcome to contact us for implementation of your interested clustering methods.
+ 
+4. Identify function modules
+Functional modules are network clusters with enriched biological functions.
+4.1 Add gene ontology data for your network
+The gene ontology(GO) data are stored in KBase central data store. You may add these data for the genes contained in your network typed object.
+4.2 Perform enrichment test for each cluster
+A two-sided Fisher's exact test is implemented for the statistical test of each GO term.
+ 
+5. Further exploration of functional modules.
+By checking the enriched GO terms for each network cluster, you may be interested in one cluster. You may get the genes contained in this cluster and perform a network data mining. More detail can be viewed in the document for ‘network data mining’ section.
+
+
+
+
+
+
+FAQ for KBase network data mining platform
+ 
+This document shows how to work with KBase network service.
+ 
+Introduction to KBase network data
+Kbase collects, pre-compute and stores various biological networks. Our data is focused on biomass production species. Currently in central store version4, there are more than 440 network datasets.  Although we collected protein-protein interaction networks and metabolic networks, the major part of the datasets are plant coexpression networks. 8 plant species (Arabidopsis, Poplar, Sorghum, Soybean, Medicago, maize, Barley and Brachypodium) are included.
+ 
+How do we generate pre-computed coexpression networks?
+The major part of the coexpression networks are generated based on each available expression series. We only consider those series which contains at least 12 samples. Generally speaking, we first identified differentially expressed genes. These genes have a biologically meaningful expression change based on the design of the experiment. Then, we used Pearson correlation coefficient (PCC) to define a network edge.  We used very high cutoff (0.95 or 0.9) in order to remove false positive correlation.
+ 
+How does the data mining platform work?
+Given a list of genes, which may comes from GWAS study or functional module,  you may want to know how these genes interact with each other. KBase network data mining platform allows you to query the possible connections of your genes in all available networks. The metadata associated with those networks may suggest the potential function of your interested genes.
+
+
