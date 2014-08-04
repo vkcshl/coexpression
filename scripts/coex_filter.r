@@ -12,12 +12,14 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
     suppressPackageStartupMessages(library('limma', quiet = T))
     DES = as.factor(unlist(c(sapply(unique(sample_index),function(x) { rep(paste('S', x, sep = ''), sum(sample_index == x)) }))))
     design = model.matrix(~DES)
-    y = voom(data, design)
-    linear_fit = lmFit(y, design)
+    #y = voom(data, design)
+    #linear_fit = lmFit(y, design)
+    linear_fit = lmFit(data, design)
     fit = eBayes(linear_fit)
     topgenes = topTable(fit, coef = 2, n = nrow(data))
     if (resp == 'n') { gene_p = topgenes$P.Val} else { gene_p = topgenes$adj.P.Val }
-    genelist = topgenes$ID
+    #genelist = topgenes$ID
+    genelist = row.names(topgenes)
   } else if (method == 'anova' || method == 'a') {
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
