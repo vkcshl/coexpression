@@ -134,7 +134,7 @@ test-server:
 deploy-r-scripts:
 	export KB_TOP=$(TARGET); \
 	export KB_RUNTIME=$(DEPLOY_RUNTIME); \
-	export KB_PERL_PATH=$(TARGET)/lib bash ; \
+	export KB_R_PATH=$(TARGET)/lib; \
 	for src in $(SRC_RSCRIPT) ; do \
 		basefile=`basename $$src`; \
 		base=`basename $$src .r`; \
