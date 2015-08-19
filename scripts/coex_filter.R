@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileName="",sample_index,resp='y'){
+coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileName="",sample_index,resp='y',tsv='y'){
   if (is.na(sample_index[1])) { sample_index = rep(c(1:(dim(data)[2]/2)), each = 2) }
   if (is.na(p_threshold)) { p_threshold = 0.05 }
   if (is.na(topnumber)) { topnumber = 0 }
@@ -54,7 +54,11 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
   if (is.na(outFileName)) {
     outFileName = "Gene_expression_data_preprocessed_for_clustering.csv"
   }  
-  write.csv(data_filter, file = outFileName, row.names = TRUE)
+  if(tsv == 'y') {
+    write.csv(data_filter, file = outFileName, sep="\t", row.names = TRUE)
+  } else {
+    write.csv(data_filter, file = outFileName, row.names = TRUE)
+  }
   if (topnumber > 0) {
     cat(paste(nrow(data_filter), ' highly differentially expressed genes are selected.\n', sep = ''))
   } else {
