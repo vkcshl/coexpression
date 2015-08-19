@@ -55,7 +55,7 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
     outFileName = "Gene_expression_data_preprocessed_for_clustering.csv"
   }  
   if(tsv == 'y') {
-    write.csv(data_filter, file = outFileName, sep="\t", row.names = TRUE)
+    write.table(data_filter, file = outFileName, sep="\t", row.names = TRUE)
   } else {
     write.csv(data_filter, file = outFileName, row.names = TRUE)
   }
@@ -132,9 +132,11 @@ if (opt$help) {
 # prepare data
 options(stringsAsFactors = FALSE)
 if (is.null(file_name)) { stop("please give your input file name $./coex_filter.r -i [your input file name]") }
-data = as.data.frame(read.csv(file_name, header = TRUE, row.names = 1, stringsAsFactors = FALSE))
 if(tab_delim == 'y'){ # inefficient but minimal testing
   data = as.data.frame(read.csv(file_name, header = TRUE, sep = "\t", row.names = 1, stringsAsFactors = FALSE))
+  cat ("Reading TSV")
+} else {
+  data = as.data.frame(read.csv(file_name, header = TRUE, row.names = 1, stringsAsFactors = FALSE))
 }
 if (is.na(sample_index)) {
   if (humanInput == 'y') {
@@ -168,9 +170,10 @@ if (is.na(sample_index)) {
   }
 } else {
   resp = 'y'
-  sample_index = as.numeric(read.csv(sample_index, header = FALSE, stringsAsFactors = FALSE))
   if(tab_delim == 'y'){ # inefficient but minimal testing
     sample_index = as.numeric(read.csv(sample_index, header = FALSE, sep = "\t", stringsAsFactors = FALSE))
+  } else {
+    sample_index = as.numeric(read.csv(sample_index, header = FALSE, stringsAsFactors = FALSE))
   }
   if (length(unique(sample_index)) == ncol(data)) {
     sample_index = c(c(1:(dim(data)[2])), c(1:(dim(data)[2])))
@@ -179,4 +182,4 @@ if (is.na(sample_index)) {
 }
 
 # Running the function
-coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp)
+coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim)
