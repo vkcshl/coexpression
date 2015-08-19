@@ -26,7 +26,7 @@ SRC_PERL = $(wildcard scripts/*.pl)
 
 WRAP_RSCRIPT_TOOL = wrap_rscript
 WRAP_RSCRIPT_SCRIPT = bash $(TOOLS_DIR)/$(WRAP_RSCRIPT_TOOL).sh
-SRC_RSCRIPT = $(wildcard scripts/*.r)
+SRC_R = $(wildcard scripts/*.R)
 
 WRAP_PYTHON_TOOL = wrap_python
 WRAP_PYTHON_SCRIPT = bash $(TOOLS_DIR)/$(WRAP_PYTHON_TOOL).sh
@@ -127,20 +127,6 @@ test-server:
 				exit 1 ; \
 			fi \
 		fi \
-	done
-
-
-# Mafile.common.rules does not include deploy-r-scripts
-deploy-r-scripts:
-	export KB_TOP=$(TARGET); \
-	export KB_RUNTIME=$(DEPLOY_RUNTIME); \
-	export KB_R_PATH=$(TARGET)/lib; \
-	for src in $(SRC_RSCRIPT) ; do \
-		basefile=`basename $$src`; \
-		base=`basename $$src .r`; \
-		echo install $$src $$base ; \
-		cp $$src $(TARGET)/rsbin ; \
-		$(WRAP_RSCRIPT_SCRIPT) "$(TARGET)/rsbin/$$basefile" $(TARGET)/bin/$$base ; \
 	done
 
 

@@ -78,12 +78,14 @@ option_list = list(
               help = "Output file that stores gene expression data matrix including selected genes only [default \"%default\"]"), 
   make_option(c("-s", "--sample_index"), type = "character", default = NA,
               help = "RECOMMENDED unless no replicates in data: The file that stores a numeric vector to indicate the sample indices that replicates correspond. For example, if sample_index is equal to c(1,1,2,2,3,3), the first two columns of data correspond to Sample 1, the third and fourth columns correspond to Sample 2, and the fifth and sixth columns correspond to Sample 3."),
-  make_option(c("-u", "--human"), type = "character", default = 'n',
+  make_option(c("-u", "--human_input"), type = "character", default = 'n',
               help = "Accept human input regarding replicates? 'y' to allow, 'n' to automatically use defaults. [y/n]  (Default is 'n')"),
   make_option(c("-r", "--has_replicates"), type = "character", default = 'y',
               help = "Does your data have replicates (this helps avoid user input during program runtime)?  [y/n]  (Default is 'y')"),
   make_option(c("-d", "--default_action"),type="character",default='y',
-              help = "Use the default action when dealing with replicates?  [y/n]  (Default is 'y')")
+              help = "Use the default action when dealing with replicates?  [y/n]  (Default is 'y')"),
+  make_option(c("-t", "--tab_delim"),type="character",default='n',
+              help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 )
 
 # pass arguments
@@ -117,6 +119,7 @@ sample_index = opt$sample_index
 humanInput = opt$human_input
 hasReplicates = opt$has_replicates
 defaultAction = opt$default_action
+tab_delim = opt$tab_delim
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -126,6 +129,9 @@ if (opt$help) {
 options(stringsAsFactors = FALSE)
 if (is.null(file_name)) { stop("please give your input file name $./coex_filter.r -i [your input file name]") }
 data = as.data.frame(read.csv(file_name, header = TRUE, row.names = 1, stringsAsFactors = FALSE))
+if(tab_delim == 'y'){ # inefficient but minimal testing
+  data = as.data.frame(read.csv(file_name, header = TRUE, sep = "\t", row.names = 1, stringsAsFactors = FALSE))
+}
 if (is.na(sample_index)) {
   if (humanInput == 'y') {
     cat("Does your data have replicates? [y/n]: ") 
@@ -159,6 +165,9 @@ if (is.na(sample_index)) {
 } else {
   resp = 'y'
   sample_index = as.numeric(read.csv(sample_index, header = FALSE, stringsAsFactors = FALSE))
+  if(tab_delim == 'y'){ # inefficient but minimal testing
+    sample_index = as.numeric(read.csv(sample_index, header = FALSE, sep = "\t", stringsAsFactors = FALSE))
+  }
   if (length(unique(sample_index)) == ncol(data)) {
     sample_index = c(c(1:(dim(data)[2])), c(1:(dim(data)[2])))
     data = cbind(data, data)

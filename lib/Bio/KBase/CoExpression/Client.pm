@@ -1,10 +1,17 @@
 package Bio::KBase::CoExpression::Client;
 
 use JSON::RPC::Client;
+use POSIX;
 use strict;
 use Data::Dumper;
 use URI;
 use Bio::KBase::Exceptions;
+my $get_time = sub { time, 0 };
+eval {
+    require Time::HiRes;
+    $get_time = sub { Time::HiRes::gettimeofday() };
+};
+
 use Bio::KBase::AuthToken;
 
 # Client version should match Impl version
@@ -41,7 +48,41 @@ sub new
     my $self = {
 	client => Bio::KBase::CoExpression::Client::RpcClient->new,
 	url => $url,
+	headers => [],
     };
+
+    chomp($self->{hostname} = `hostname`);
+    $self->{hostname} ||= 'unknown-host';
+
+    #
+    # Set up for propagating KBRPC_TAG and KBRPC_METADATA environment variables through
+    # to invoked services. If these values are not set, we create a new tag
+    # and a metadata field with basic information about the invoking script.
+    #
+    if ($ENV{KBRPC_TAG})
+    {
+	$self->{kbrpc_tag} = $ENV{KBRPC_TAG};
+    }
+    else
+    {
+	my ($t, $us) = &$get_time();
+	$us = sprintf("%06d", $us);
+	my $ts = strftime("%Y-%m-%dT%H:%M:%S.${us}Z", gmtime $t);
+	$self->{kbrpc_tag} = "C:$0:$self->{hostname}:$$:$ts";
+    }
+    push(@{$self->{headers}}, 'Kbrpc-Tag', $self->{kbrpc_tag});
+
+    if ($ENV{KBRPC_METADATA})
+    {
+	$self->{kbrpc_metadata} = $ENV{KBRPC_METADATA};
+	push(@{$self->{headers}}, 'Kbrpc-Metadata', $self->{kbrpc_metadata});
+    }
+
+    if ($ENV{KBRPC_ERROR_DEST})
+    {
+	$self->{kbrpc_error_dest} = $ENV{KBRPC_ERROR_DEST};
+	push(@{$self->{headers}}, 'Kbrpc-Errordest', $self->{kbrpc_error_dest});
+    }
 
     #
     # This module requires authentication.
@@ -151,7 +192,7 @@ sub filter_genes
 	}
     }
 
-    my $result = $self->{client}->call($self->{url}, {
+    my $result = $self->{client}->call($self->{url}, $self->{headers}, {
 	method => "CoExpression.filter_genes",
 	params => \@args,
     });
@@ -250,7 +291,7 @@ sub const_coex_net_clust
 	}
     }
 
-    my $result = $self->{client}->call($self->{url}, {
+    my $result = $self->{client}->call($self->{url}, $self->{headers}, {
 	method => "CoExpression.const_coex_net_clust",
 	params => \@args,
     });
@@ -276,7 +317,7 @@ sub const_coex_net_clust
 
 sub version {
     my ($self) = @_;
-    my $result = $self->{client}->call($self->{url}, {
+    my $result = $self->{client}->call($self->{url}, $self->{headers}, {
         method => "CoExpression.version",
         params => [],
     });
@@ -435,7 +476,7 @@ use strict;
 #
 
 sub call {
-    my ($self, $uri, $obj) = @_;
+    my ($self, $uri, $headers, $obj) = @_;
     my $result;
 
 
@@ -445,7 +486,7 @@ sub call {
 	}
 	else {
 	    Carp::croak "not hashref." unless (ref $obj eq 'HASH');
-	    $result = $self->_post($uri, $obj);
+	    $result = $self->_post($uri, $headers, $obj);
 	}
 
     }
@@ -475,7 +516,7 @@ sub call {
 
 
 sub _post {
-    my ($self, $uri, $obj) = @_;
+    my ($self, $uri, $headers, $obj) = @_;
     my $json = $self->json;
 
     $obj->{version} ||= $self->{version} || '1.1';
@@ -502,6 +543,7 @@ sub _post {
         Content_Type   => $self->{content_type},
         Content        => $content,
         Accept         => 'application/json',
+	@$headers,
 	($self->{token} ? (Authorization => $self->{token}) : ()),
     );
 }
