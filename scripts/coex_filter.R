@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileName="",sample_index,resp='y',tsv='y'){
+coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileName="",sample_index,resp='y',tsv='y', genelistFileName = 'selected.txt'){
   if (is.na(sample_index[1])) { sample_index = rep(c(1:(dim(data)[2]/2)), each = 2) }
   if (is.na(p_threshold)) { p_threshold = 0.05 }
   if (is.na(topnumber)) { topnumber = 0 }
@@ -59,6 +59,7 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
   } else {
     write.csv(data_filter, file = outFileName, row.names = TRUE)
   }
+  write(selected_genes, file = genelistFileName, sep="\t")
   if (topnumber > 0) {
     cat(paste(nrow(data_filter), ' highly differentially expressed genes are selected.\n', sep = ''))
   } else {
@@ -88,6 +89,8 @@ option_list = list(
               help = "Does your data have replicates (this helps avoid user input during program runtime)?  [y/n]  (Default is 'y')"),
   make_option(c("-d", "--default_action"),type="character",default='y',
               help = "Use the default action when dealing with replicates?  [y/n]  (Default is 'y')"),
+  make_option(c("-g", "--genelistFileName"), type = "character", default = 'selected.txt', 
+              help = "Output selected gene list file name. [default \"%default\"]"), 
   make_option(c("-t", "--tab_delim"),type="character",default='n',
               help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 )
@@ -124,6 +127,7 @@ humanInput = opt$human_input
 hasReplicates = opt$has_replicates
 defaultAction = opt$default_action
 tab_delim = opt$tab_delim
+glfn = opt$genelistFileName
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -134,7 +138,6 @@ options(stringsAsFactors = FALSE)
 if (is.null(file_name)) { stop("please give your input file name $./coex_filter.r -i [your input file name]") }
 if(tab_delim == 'y'){ # inefficient but minimal testing
   data = as.data.frame(read.csv(file_name, header = TRUE, sep = "\t", row.names = 1, stringsAsFactors = FALSE))
-  cat ("Reading TSV")
 } else {
   data = as.data.frame(read.csv(file_name, header = TRUE, row.names = 1, stringsAsFactors = FALSE))
 }
@@ -182,4 +185,4 @@ if (is.na(sample_index)) {
 }
 
 # Running the function
-coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim)
+coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim, genelistFileName = glfn)
