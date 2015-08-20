@@ -18,8 +18,8 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
     fit = eBayes(linear_fit)
     topgenes = topTable(fit, coef = 2, n = nrow(data))
     if (resp == 'n') { gene_p = topgenes$P.Val} else { gene_p = topgenes$adj.P.Val }
-    #genelist = topgenes$ID
-    genelist = row.names(topgenes)
+    genelist = topgenes$ID
+    #genelist = row.names(topgenes)
   } else if (method == 'anova' || method == 'a') {
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
@@ -27,7 +27,6 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
       genelist=rownames(data)
     }
   }
-  
   if (topnumber > length(gene_p)) {
     stop('Requested top genes are more than total genes.')
   } else if (topnumber > 0 & topnumber <= length(gene_p)) {
@@ -89,7 +88,7 @@ option_list = list(
               help = "Does your data have replicates (this helps avoid user input during program runtime)?  [y/n]  (Default is 'y')"),
   make_option(c("-d", "--default_action"),type="character",default='y',
               help = "Use the default action when dealing with replicates?  [y/n]  (Default is 'y')"),
-  make_option(c("-g", "--genelistFileName"), type = "character", default = 'selected.txt', 
+  make_option(c("-x", "--genelistFileName"), type = "character", default = 'selected.txt', 
               help = "Output selected gene list file name. [default \"%default\"]"), 
   make_option(c("-t", "--tab_delim"),type="character",default='n',
               help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
@@ -183,6 +182,5 @@ if (is.na(sample_index)) {
     data = cbind(data, data)
   }
 }
-
 # Running the function
 coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim, genelistFileName = glfn)
