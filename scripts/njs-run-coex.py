@@ -111,21 +111,21 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     cmd_coex_filter = [COEX_FILTER, '-i', "{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), '-o', "{0}/{1}".format(FLTRD_DIR, FLTRD_FN),
                        '-m', param['method'], '-s', "{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN),
                        '-x', "{0}/{1}".format(RAWEXPR_DIR, GENELST_FN), '-t', 'y']
-    if 'p_value' in param:
-      cmd_coex_filter.append("-p")
-      cmd_coex_filter.append(param['p_value'])
-
     if 'num_features' in param:
       cmd_coex_filter.append("-n")
       cmd_coex_filter.append(param['num_features'])
+
+    if 'num_features' not in param and 'p_value' in param:
+      cmd_coex_filter.append("-p")
+      cmd_coex_filter.append(param['p_value'])
 
     if 'p_value' not in param and 'num_features' not in param:
       logger.error("One of p_value or num_features must be defined");
       sys.exit(2)
 
-    if 'p_value' in param and 'num_features' in param:
-      logger.error("Both of p_value and num_features cannot be defined together");
-      sys.exit(3)
+    #if 'p_value' in param and 'num_features' in param:
+    #  logger.error("Both of p_value and num_features cannot be defined together");
+    #  sys.exit(3)
 
     tool_process = subprocess.Popen(cmd_coex_filter, stderr=subprocess.PIPE)
     stdout, stderr = tool_process.communicate()
