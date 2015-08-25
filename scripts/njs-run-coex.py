@@ -205,6 +205,10 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       gl = glh.readlines()
     gl = [x.strip('\n') for x in gl]
 
+    if(len(gl) < 1) :
+      logger.error("No genes are selected")
+      sys.exit(4)
+
     for g in gl:
       if 'genome_ref' in expr:
         fs['elements'][g] = [expr['genome_ref']]
