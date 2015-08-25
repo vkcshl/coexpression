@@ -150,16 +150,30 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
     expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
     
+    # change workspace to be the referenced object's workspace_name because it may not be in the same working ws due to referencing
     cmd_upload_expr = [TSV_2_FVE, '--workspace_service_url', workspace_service_url, 
-                                      '--workspace_name', param['workspace_name'],
-                                      '--object_name', "{0}_filtered".format(param['object_name']),
+                                      '--object_name', param['out_expr_object_name'],
                                       '--working_directory', FINAL_DIR,
                                       '--input_directory', FLTRD_DIR,
                                       '--output_file_name', FINAL_FN
                           ]
+    tmp_ws = param['workspace_name']
+
     if 'genome_ref' in expr:
         cmd_upload_expr.append('--genome_object_name')
-        cmd_upload_expr.append(expr['genome_ref'])
+        obj_infos = ws.get_object_info_new({"objects": [{'ref':expr['genome_ref']}]})[0]
+
+        if len(obj_infos) < 1:
+            logger.error("Couldn't find {0} from the workspace".format(expr['genome_ref']))
+            raise Exception("Couldn't find {0} from the workspace".format(expr['genome_ref']))
+
+        cmd_upload_expr.append(obj_infos[1])
+        tmp_ws = "{0}".format(obj_infos[7])
+        logger.info("{0} => {1} / {2}".format(expr['genome_ref'], tmp_ws, obj_infos[1]))
+
+    # updated ws name
+    cmd_upload_expr.append('--workspace_name')
+    cmd_upload_expr.append(tmp_ws)
 
     tool_process = subprocess.Popen(" ".join(cmd_upload_expr), stderr=subprocess.PIPE, shell=True)
     stdout, stderr = tool_process.communicate()
@@ -175,7 +189,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       eo = json.load(et)
 
     if 'description' in expr: expr['description'] = "{0}, coex_filter by {1}".format(expr['description'], " ".join(cmd_coex_filter))
-    if 'feature_mapping' in expr:
+    if 'feature_mapping' in expr and 'feature_mapping' in eo:
         expr['feature_mapping'] = eo['feature_mapping']
     expr['data'] = eo['data']
 
@@ -190,6 +204,10 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     with open("{0}/{1}".format(RAWEXPR_DIR, GENELST_FN),'r') as glh:
       gl = glh.readlines()
     gl = [x.strip('\n') for x in gl]
+
+    if(len(gl) < 1) :
+      logger.error("No genes are selected")
+      sys.exit(4)
 
     for g in gl:
       if 'genome_ref' in expr:
