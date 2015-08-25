@@ -158,6 +158,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
                                       '--output_file_name', FINAL_FN
                           ]
     tmp_ws = param['workspace_name']
+
     if 'genome_ref' in expr:
         cmd_upload_expr.append('--genome_object_name')
         obj_infos = ws.get_object_info_new({"objects": [{'ref':expr['genome_ref']}]})[0]
@@ -167,7 +168,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
             raise Exception("Couldn't find {0} from the workspace".format(expr['genome_ref']))
 
         cmd_upload_expr.append(obj_infos[1])
-        tmp_ws = obj_infos[7]
+        tmp_ws = "{0}".format(obj_infos[7])
         logger.info("{0} => {1} / {2}".format(expr['genome_ref'], tmp_ws, obj_infos[1]))
 
     # updated ws name
@@ -188,7 +189,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       eo = json.load(et)
 
     if 'description' in expr: expr['description'] = "{0}, coex_filter by {1}".format(expr['description'], " ".join(cmd_coex_filter))
-    if 'feature_mapping' in expr:
+    if 'feature_mapping' in expr and 'feature_mapping' in eo:
         expr['feature_mapping'] = eo['feature_mapping']
     expr['data'] = eo['data']
 
