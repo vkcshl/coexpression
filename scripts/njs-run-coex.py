@@ -205,7 +205,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       eo = json.load(et)
 
     if 'description' not in expr: 
-        expr['description'] = "Filtered ExpressionMatrix"
+        expr['description'] = "Filtered Expression Matrix"
     expr['description'] += " : Filtered by '{1}' ".format(expr['description'], param['method'])
     if 'num_features' in param and param['num_features'] > 0:
        expr['description'] += "with {0} features".format(param['num_features'])
@@ -224,7 +224,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
 
     ## Upload FeatureSet
     fs ={'elements': {}}
-    fs['description'] = "FeatureSet induced by filtering method '{0}' ".format(param['method'])
+    fs['description'] = "FeatureSet identified by filtering method '{0}' ".format(param['method'])
     if 'num_features' in param and param['num_features'] > 0:
        fs['description'] += "with {0} features".format(param['num_features'])
     else:
