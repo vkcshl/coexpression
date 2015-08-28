@@ -18,8 +18,8 @@ coex_filter = function(data,method="lor",p_threshold=0.05,topnumber=0,outFileNam
     fit = eBayes(linear_fit)
     topgenes = topTable(fit, coef = 2, n = nrow(data))
     if (resp == 'n') { gene_p = topgenes$P.Val} else { gene_p = topgenes$adj.P.Val }
-    genelist = topgenes$ID
-    #genelist = row.names(topgenes)
+    #genelist = topgenes$ID ## for R v2
+    genelist = row.names(topgenes) ## for R v3
   } else if (method == 'anova' || method == 'a') {
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
