@@ -115,7 +115,7 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       cmd_coex_filter.append("-n")
       cmd_coex_filter.append(param['num_features'])
 
-    if 'num_features' not in param and 'p_value' in param:
+    if 'p_value' in param:
       cmd_coex_filter.append("-p")
       cmd_coex_filter.append(param['p_value'])
 
@@ -206,14 +206,8 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
 
     if 'description' not in expr: 
         expr['description'] = "Filtered Expression Matrix"
-    expr['description'] += " : Filtered by '{1}' ".format(expr['description'], param['method'])
-    if 'num_features' in param and param['num_features'] > 0:
-       expr['description'] += "with {0} features".format(param['num_features'])
-    else:
-       try:
-         expr['description'] += "with {0} p-value cut-off".format(param['p_value'])
-       except:
-         pass
+    expr['description'] += " : Filtered by '{1}' method ".format(expr['description'], param['method'])
+
     if 'feature_mapping' in expr and 'feature_mapping' in eo:
         expr['feature_mapping'] = eo['feature_mapping']
     expr['data'] = eo['data']
@@ -225,15 +219,8 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     ## Upload FeatureSet
     fs ={'elements': {}}
     fs['description'] = "FeatureSet identified by filtering method '{0}' ".format(param['method'])
-    if 'num_features' in param and param['num_features'] > 0:
-       fs['description'] += "with {0} features".format(param['num_features'])
-    else:
-       try:
-         fs['description'] += "with {0} p-value cut-off".format(param['p_value'])
-       except:
-         pass
 
-    fs['description'] += " from {0}/{1}".format(param['workspace_name'], param['object_name'])
+    fs['description'] += "from {0}/{1}".format(param['workspace_name'], param['object_name'])
     
     with open("{0}/{1}".format(RAWEXPR_DIR, GENELST_FN),'r') as glh:
       gl = glh.readlines()
