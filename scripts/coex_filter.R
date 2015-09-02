@@ -24,12 +24,15 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
       gene_p[i] = summary(gene_anv)[[1]]$"Pr(>F)"[1]#gene_anv$"Pr(>F)"[1]
+      if(is.na(gene_p[i]) | is.nan(gene_p[i])) {
+        gene_p[i] = 1.1
+      }
       genelist=rownames(data)
     }
   }
   if (topnumber > length(gene_p)) {
     stop('Requested top genes are more than total genes.')
-  } else if (sum(gene_p < p_threshold) == 0) {
+  } else if (sum(gene_p < p_threshold, na.rm = TRUE) == 0) {
     stop('No highly differentially expressed gene was found. Please increase p-value threshold.')
   }
   if( p_threshold < 1) { 
