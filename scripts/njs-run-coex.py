@@ -34,6 +34,28 @@ FLTRD_FN = 'filtered.tsv'
 FINAL_FN = 'filtered.json'
 GENELST_FN = 'selected.tsv'
 
+
+def empty_results(err_msg, expr, workspace_service_url, param, logger, ws):
+    if 'description' not in expr: 
+        expr['description'] = "Filtered Expression Matrix"
+    expr['description'] += " : Empty Expression Matrix by '{0}' method; {1}".format(param['method'], err_msg)
+
+    expr['feature_mapping'] = {}
+    expr['data'] = {'row_ids' : [], 'col_ids' : [], 'values' : []}
+
+    ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.ExpressionMatrix',
+                                                                          'data' : expr,
+                                                                          'name' : (param['out_expr_object_name'])}]})
+
+    ## Upload FeatureSet
+    # Empty element feature set was not properly handled by widget, so skip it
+    #fs ={'elements': {}}
+    #fs['description'] = "Empty FeatureSet by '{0}' method; {1}".format(param['method'], err_msg)
+
+    #ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseCollections.FeatureSet',
+    #                                                                      'data' : fs,
+    #                                                                      'name' : (param['out_fs_object_name'])}]})
+
 def run_filter_genes(workspace_service_url=None, param_file = None, level=logging.INFO, logger = None):
     """
     Narrative Job Wrapper script to execute coex_filter
@@ -74,6 +96,12 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     with open(param_file) as paramh:
       param = json.load(paramh)
 
+
+    from biokbase.workspace.client import Workspace
+    ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
+    expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+
+
     cmd_dowload_cvt_tsv = [FVE_2_TSV, '--workspace_service_url', workspace_service_url, 
                                       '--workspace_name', param['workspace_name'],
                                       '--object_name', param['object_name'],
@@ -100,6 +128,9 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
       fl = f.readline()
     ncol = len(fl.split('\t'))
     
+    # force to use ANOVA if the number of sample is two
+    if(ncol == 3): param['method'] = 'anova'
+
     with open("{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN), 'wt') as s:
       s.write("0")
       for j in range(1,ncol-1):
@@ -121,7 +152,8 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
 
     if 'p_value' not in param and 'num_features' not in param:
       logger.error("One of p_value or num_features must be defined");
-      sys.exit(2)
+      return empty_results("One of p_value or num_features must be defined", expr,workspace_service_url, param, logger, ws)
+      #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
 
     #if 'p_value' in param and 'num_features' in param:
     #  logger.error("Both of p_value and num_features cannot be defined together");
@@ -137,19 +169,29 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
         logger.info(stderr)
 
     ## Header correction
-    with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'r') as ff:
-        fe = ff.readlines()
-    with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'w') as ff:
-        ff.write(fl) # use original first line that has correct header information
-        fe.pop(0)
-        ff.writelines(fe)
+    try:
+        with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'r') as ff:
+            fe = ff.readlines()
+        with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'w') as ff:
+            ff.write(fl) # use original first line that has correct header information
+            fe.pop(0)
+            ff.writelines(fe)
+    except:
+        logger.error("Output was not found");
+        return empty_results("Increase p_value or specify num_features", expr,workspace_service_url, param, logger, ws)
+        
     
+    ## checking genelist
+    with open("{0}/{1}".format(RAWEXPR_DIR, GENELST_FN),'r') as glh:
+      gl = glh.readlines()
+    gl = [x.strip('\n') for x in gl]
+
+    if(len(gl) < 1) :
+      logger.error("No genes are selected")
+      return empty_results("Increase p_value or specify num_features", expr,workspace_service_url, param, logger, ws)
+      #sys.exit(4)
 
     ## Upload FVE
-    from biokbase.workspace.client import Workspace
-    ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
-    expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
-    
     # change workspace to be the referenced object's workspace_name because it may not be in the same working ws due to referencing
     # Updates: change missing genome handling strategy by copying reference to working workspace
     cmd_upload_expr = [TSV_2_FVE, '--workspace_service_url', workspace_service_url, 
@@ -221,14 +263,6 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
     fs['description'] = "FeatureSet identified by filtering method '{0}' ".format(param['method'])
 
     fs['description'] += "from {0}/{1}".format(param['workspace_name'], param['object_name'])
-    
-    with open("{0}/{1}".format(RAWEXPR_DIR, GENELST_FN),'r') as glh:
-      gl = glh.readlines()
-    gl = [x.strip('\n') for x in gl]
-
-    if(len(gl) < 1) :
-      logger.error("No genes are selected")
-      sys.exit(4)
 
     for g in gl:
       if 'genome_ref' in expr:
