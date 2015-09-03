@@ -58,8 +58,16 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
       }
     })
     data_filter = data_preproc[selected_genes,]
+    if(length(selected_genes) == 1) {
+      data_filter = t(as.data.frame((data_preproc[selected_genes,])))
+      rownames(data_filter) = selected_genes
+    }
   } else {
     data_filter = data[selected_genes,]
+    if(length(selected_genes) == 1) {
+      data_filter = t(as.data.frame((data[selected_genes,])))
+      rownames(data_filter) = selected_genes
+    }
   }
   
   if (is.na(outFileName)) {
