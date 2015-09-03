@@ -24,7 +24,7 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
       gene_p[i] = summary(gene_anv)[[1]]$"Pr(>F)"[1]#gene_anv$"Pr(>F)"[1]
-      if(is.na(gene_p[i]) | is.nan(gene_p[i])) {
+      if(is.na(gene_p[i]) | is.nan(gene_p[i]) | is.null(gene_p[i])) {
         gene_p[i] = 1.1
       }
       genelist=rownames(data)
