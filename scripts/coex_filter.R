@@ -24,7 +24,7 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
     for (i in 1:length(gene_p)) {
       gene_anv = aov(as.numeric(data[i,]) ~ sample_index)
       gene_p[i] = summary(gene_anv)[[1]]$"Pr(>F)"[1]#gene_anv$"Pr(>F)"[1]
-      if(is.na(gene_p[i]) | is.nan(gene_p[i])) {
+      if(is.na(gene_p[i]) | is.nan(gene_p[i]) | is.null(gene_p[i])) {
         gene_p[i] = 1.1
       }
       genelist=rownames(data)
@@ -85,7 +85,7 @@ option_list = list(
               help = "REQUIRED: Input file that stores original gene expression data matrix. Each row corresponds to a gene, and each column corresponds to a sample. The column names are sample names. The row names are gene names."), 
   make_option(c("-m", "--method"), type = "character", default = 'lor', 
               help = "Method to identify highly differentially expressed genes. Choices include anova and log-odd ratio (lor). [default \"%default\"]"), 
-  make_option(c("-p", "--p_threshold"), type = "double", default = 1.00,
+  make_option(c("-p", "--p_threshold"), type = "double", default = 1.01,
               help = "Maximum p-value up to which genes are significantly differentially expressed [default %default]"), 
   make_option(c("-n", "--topnumber"), type = "integer", default = 0,
               help = "Number of top genes that are most highly differentially expressed [default %default]"),
