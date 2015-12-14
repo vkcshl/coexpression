@@ -451,7 +451,7 @@ if __name__ == "__main__":
     logger = script_utils.stderrlogger(__file__)
     try:
         #ret_json = run_coex_cluster(args.ws_url, args.param_file, logger=logger)
-        if args.command == 'filter_genes':
+        if args.command == 'coex_filter':
             ret_json = run_filter_genes(args.ws_url, args.param_file, logger=logger)
         elif args.command == "coex_cluster":
             ret_json = run_coex_cluster(args.ws_url, args.param_file, logger=logger)
