@@ -158,7 +158,7 @@ def run_coex_cluster(workspace_service_url=None, param_file = None, level=loggin
     for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
        if p in param:
          cmd_coex_cluster.append("--{0}".format(p))
-         cmd_coex_cluster.append(param[p])
+         cmd_coex_cluster.append(str(param[p]))
  
 
     #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
@@ -302,11 +302,11 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
                        '-x', "{0}/{1}".format(RAWEXPR_DIR, GENELST_FN), '-t', 'y']
     if 'num_features' in param:
       cmd_coex_filter.append("-n")
-      cmd_coex_filter.append(param['num_features'])
+      cmd_coex_filter.append(str(param['num_features']))
 
     if 'p_value' in param:
       cmd_coex_filter.append("-p")
-      cmd_coex_filter.append(param['p_value'])
+      cmd_coex_filter.append(str(param['p_value']))
 
     if 'p_value' not in param and 'num_features' not in param:
       logger.error("One of p_value or num_features must be defined");

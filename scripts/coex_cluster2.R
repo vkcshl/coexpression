@@ -146,16 +146,16 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   colnames(mod_edgelist)=c('node 1','node 2','weight')
   
   if(tsv == 'y') {
-    write.csv(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.tsv', sep="\t"), row.names = F) 
+    write.table(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.tsv'), sep="\t", row.names = F) 
   } else {
-    write.csv(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.csv', sep=""), row.names = F) 
+    write.csv(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.csv'), sep="", row.names = F) 
   }
   clusterInfo = data.frame(Gene = colnames(adjmat), module = modulenames)
   if (is.na(outFileName)) {
     outFileName = paste('coex_cluster_method=', method, '.csv', sep="")
   }
   if(tsv == 'y') {
-    write.csv(clusterInfo, file = outFileName, row.names = FALSE, sep="\t")  
+    write.table(clusterInfo, file = outFileName, row.names = FALSE, sep="\t")  
   } else {
     write.csv(clusterInfo, file = outFileName, row.names = FALSE)  
   }
