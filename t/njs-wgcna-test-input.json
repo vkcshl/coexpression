@@ -1,6 +1,6 @@
 {
   "workspace_name": "coex_ftr_tst",
-  "object_name": "poplar_roots_exp_matrix_10000_complete_ftrd",
+  "object_name": "E_coli_v4_Build_6_impute_1",
   "net_method": "WGCNA",
   "clust_method": "WGCNA",
   "out_object_name": "WGCNA_clustering_test"
