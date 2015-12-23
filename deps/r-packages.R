@@ -1,4 +1,6 @@
-source("http://bioconductor.org/biocLite.R") 
+try(update.packages(checkBuilt=TRUE, ask=FALSE, repos = "http://cran.wustl.edu", lib = "[% rlib %]"))
+source("http://bioconductor.org/biocLite.R")
+try(biocLite("BiocUpgrade", ask=FALSE, lib = "[% rlib %]" ))
 biocLite(c("RSQLite"), lib = "[% rlib %]" )
-biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"), lib = "[% rlib %]") 
+biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"), lib = "[% rlib %]")
 install.packages ("WGCNA", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
