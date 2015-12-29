@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y unzip gcc bzip2 ncurses-dev
 RUN pip install mpipe
 WORKDIR /kb/module
 COPY ./deps /kb/deps
+### R install docker file: https://github.com/rocker-org/rocker/blob/master/rstudio/Dockerfile
 RUN \
   bash /kb/deps/WGCNA/install-r-packages.sh 
 

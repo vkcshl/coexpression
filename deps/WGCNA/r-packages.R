@@ -1,6 +1,5 @@
-try(update.packages(checkBuilt=TRUE, ask=FALSE, repos = "http://cran.wustl.edu", lib = "[% rlib %]"))
-source("http://bioconductor.org/biocLite.R")
-try(biocLite("BiocUpgrade", ask=FALSE, lib = "[% rlib %]" ))
-biocLite(c("RSQLite"), lib = "[% rlib %]" )
-biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"), lib = "[% rlib %]")
-install.packages ("WGCNA", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
+#try(update.packages(checkBuilt=TRUE, ask=FALSE, repos = "http://cran.wustl.edu", lib = "[% rlib %]"))
+# upgrade any existing CRAN package to the latest
+try(update.packages(checkBuilt=TRUE, ask=FALSE, repos = "http://cran.wustl.edu"))
+# remove bio conductor, so that it would have less issues
+try(remove.packages("BiocInstaller", ask=FALSE))

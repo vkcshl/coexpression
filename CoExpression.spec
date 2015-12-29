@@ -31,7 +31,7 @@ module CoExpression
   The replicate information is manully extracted by KBase developers. Only a part of samples has been assigned to a replicate group. For those samples without an assignment, the variation of its expression abundance is used directly.
   filter_genes now has two methods to identify differentially expressed genes: ANOVA and lor(from limma r package). The output of this function is a list of genes*/
   
-  funcdef filter_genes(FilterGenesParams args) returns (list<string> job_id);
+  async funcdef filter_genes(FilterGenesParams args) returns (list<string> job_id);
 
   typedef structure {
     string ws_id; /*ws_id is the workspace id*/
@@ -49,7 +49,7 @@ module CoExpression
   const_coex_net_clust provides the function to build coexpression network and identify the functional modules among it.
   A functional module is a network cluster with enrichment of certain biological function. const_coex_net_clust first construct coexpression network. Then, it identifys the clusters among the network. Finally, it identifys the GeneOntology enrichment for the genes in each cluster.
   */
-  funcdef const_coex_net_clust(ConstCoexNetClustParams args) returns (list<string> job_id);
+  async funcdef const_coex_net_clust(ConstCoexNetClustParams args) returns (list<string> job_id);
 };
 
 
