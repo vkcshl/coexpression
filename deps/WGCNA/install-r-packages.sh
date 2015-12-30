@@ -28,12 +28,14 @@ if [ "$c" == 0 ]; then
 fi
 
 mkdir -p $dest/lib/R/library # for sanity and it actually does not use the created folder
+# the kb runtime execution environment has the following variable was set
+export R_LIBS=$dest/lib
 if [ -e $runt/R ]; then 
 	# /kb/runtime case
 	tpage --define rlib=$dest/lib "$srcd/r-packages.R"        | $runt/R --vanilla --slave
 	tpage --define rlib=$dest/lib "$srcd/r-wgcna-packages.R"  | $runt/R --vanilla --slave
 else # docker does not have R on /kb/runtime
 	# system default case
-	tpage --define rlib=/usr/lib/R "$srcd/r-packages.R"        | /usr/bin/R --vanilla --slave
-	tpage --define rlib=/usr/local/lib/R "$srcd/r-wgcna-packages.R"  | /usr/bin/R --vanilla --slave
+	tpage --define rlib=$dest/lib "$srcd/r-packages.R"        | /usr/bin/R --vanilla --slave
+	tpage --define rlib=$dest/lib "$srcd/r-wgcna-packages.R"  | /usr/bin/R --vanilla --slave
 fi

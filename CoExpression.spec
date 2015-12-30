@@ -18,23 +18,29 @@ module CoExpression
   authentication required;
 
   typedef structure {	  
-    string ws_id; /*ws_id is the workspace id*/
+    string workspace_name; /* workspace name*/
     string inobj_id; /*inobj_id is expression series object id */
     string outobj_id; /*outobj_id is the output object id*/
     string p_value;/*p_value is the p-value of the statistical significance of differential expression*/
     string method;/*method is the method used for identification of differentially expressed genes*/
     string num_genes;/*num_gene is user for specify how many differentially expressed genes are needed*/
   } FilterGenesParams;
+
+  typedef structure {	  
+    string workspace_name; /* workspace name*/
+    string out_expr_object_name; /*output expression object name*/
+    string out_fs_object_name; /*output feature set object name*/
+  } FilterGenesResult;
   
   /* Description of filter_genes: 
   filter_genes provides the function to identify differentially expressed genes given an expression series/experiment. An expression series/experiment contains a list of expression samples. A expression sample is the measurement of mRNA abundance in a biological sample. The design of expression profiling usually includes replicates. The replicates allows us to differ the non-relevent expression variation and the relevent expression variation.
   The replicate information is manully extracted by KBase developers. Only a part of samples has been assigned to a replicate group. For those samples without an assignment, the variation of its expression abundance is used directly.
   filter_genes now has two methods to identify differentially expressed genes: ANOVA and lor(from limma r package). The output of this function is a list of genes*/
   
-  async funcdef filter_genes(FilterGenesParams args) returns (list<string> job_id);
+  async funcdef filter_genes(FilterGenesParams args) returns (FilterGenesResult result);
 
   typedef structure {
-    string ws_id; /*ws_id is the workspace id*/
+    string workspace_name; /* workspace name*/
     string inobj_id; /* series object id */
     string outobj_id; /*outobj_id is the output object id*/
     string cut_off; /*cut_off is the statistical threshold to define a coexpression relationship*/
@@ -43,13 +49,18 @@ module CoExpression
     string num_modules; /*num_modules is used to define the number of modules need to be identified from the network*/
   } ConstCoexNetClustParams;
 
+  typedef structure {
+    string workspace_name; /* workspace name*/
+    string out_object_name; /*output object name*/
+  } ConstCoexNetClustResult;
+
 
 
   /*Description of const_coex_net_clust
   const_coex_net_clust provides the function to build coexpression network and identify the functional modules among it.
   A functional module is a network cluster with enrichment of certain biological function. const_coex_net_clust first construct coexpression network. Then, it identifys the clusters among the network. Finally, it identifys the GeneOntology enrichment for the genes in each cluster.
   */
-  async funcdef const_coex_net_clust(ConstCoexNetClustParams args) returns (list<string> job_id);
+  async funcdef const_coex_net_clust(ConstCoexNetClustParams args) returns (ConstCoexNetClustResult result);
 };
 
 

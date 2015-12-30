@@ -6,7 +6,7 @@ import argparse
 import json
 import logging
 import time
-import pprint 
+from  pprint import pprint
 import string
 import subprocess
 from os import environ
@@ -104,8 +104,6 @@ It will serve queries for tissue or condition specific co-expression network for
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
-        if logger is None:
-            logger = script_utils.stderrlogger(__file__)
         pprint(config)
         if 'ws_url' in config:
               self.__WS_URL = config['ws_url']
@@ -125,7 +123,7 @@ It will serve queries for tissue or condition specific co-expression network for
 	      self.__PUBLIC_SHOCK_NODE = config['force_shock_node_2b_public']
 	
         # logging
-        self.logger = logging.getLogger('KBaseRNASeq')
+        self.logger = logging.getLogger('CoExpression')
         if 'log_level' in config:
               self.logger.setLevel(config['log_level'])
         else:
@@ -141,204 +139,69 @@ It will serve queries for tissue or condition specific co-expression network for
 
     def filter_genes(self, ctx, args):
         # ctx is the context object
-        # return variables are: job_id
+        # return variables are: result
         #BEGIN filter_genes
         try:
-            os.makedirs(RAWEXPR_DIR)
+            os.makedirs(self.RAWEXPR_DIR)
         except:
             pass
         try:
-            os.makedirs(CLSTR_DIR)
+            os.makedirs(self.FLTRD_DIR)
         except:
             pass
         try:
-            os.makedirs(FINAL_DIR)
+            os.makedirs(self.FINAL_DIR)
         except:
             pass
  
-        if logger is None:
-            logger = script_utils.stderrlogger(__file__)
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
         
-        logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        result = {}
+        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
         token = ctx['token']
  
-        with open(param_file) as paramh:
-          param = json.load(paramh)
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+
+        param = args
  
  
         from biokbase.workspace.client import Workspace
-        ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
+        ws = Workspace(url=self.__WS_URL, token=token)
         expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
  
  
-        cmd_dowload_cvt_tsv = [FVE_2_TSV, '--workspace_service_url', workspace_service_url, 
+        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
                                           '--workspace_name', param['workspace_name'],
                                           '--object_name', param['object_name'],
-                                          '--working_directory', RAWEXPR_DIR,
-                                          '--output_file_name', EXPRESS_FN
+                                          '--working_directory', self.RAWEXPR_DIR,
+                                          '--output_file_name', self.EXPRESS_FN
                               ]
  
         # need shell in this case because the java code is depending on finding the KBase token in the environment
         #  -- copied from FVE_2_TSV
-        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True)
+        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
         stdout, stderr = tool_process.communicate()
         
         if stdout is not None and len(stdout) > 0:
-            logger.info(stdout)
+            self.logger.info(stdout)
  
         if stderr is not None and len(stderr) > 0:
-            logger.info(stderr)
-            #raise Exception(stderr)
+            self.logger.info(stderr)
  
-        logger.info("Coexpression clustering analysis")
+        self.logger.info("Identifying differentially expressed genes")
  
         ## Prepare sample file
         # detect num of columns
-        with open("{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), 'r') as f:
-          fl = f.readline()
-        ncol = len(fl.split('\t'))
-        
-        with open("{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN), 'wt') as s:
-          s.write("0")
-          for j in range(1,ncol-1):
-            s.write("\t{0}".format(j))
-          s.write("\n")
- 
- 
-        ## Run coex_cluster
-        cmd_coex_cluster = [COEX_CLUSTER, '-t', 'y',
-                           '-i', "{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), 
-                           '-o', "{0}/{1}".format(CLSTR_DIR, CLSTR_FN)]
- 
-        for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
-           if p in param:
-             cmd_coex_cluster.append("--{0}".format(p))
-             cmd_coex_cluster.append(str(param[p]))
-  
- 
-        #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
- 
-        #if 'p_value' in param and 'num_features' in param:
-        #  logger.error("Both of p_value and num_features cannot be defined together");
-        #  sys.exit(3)
- 
-        tool_process = subprocess.Popen(cmd_coex_cluster, stderr=subprocess.PIPE)
-        stdout, stderr = tool_process.communicate()
-        
-        if stdout is not None and len(stdout) > 0:
-            logger.info(stdout)
- 
-        if stderr is not None and len(stderr) > 0:
-            if re.search(r'^There were \d+ warnings \(use warnings\(\) to see them\)', stderr):
-              logger.info(stderr)
-            else:
-              logger.error(stderr)
-              raise Exception(stderr)
- 
-        
-        # build index for gene list
-        pos_index ={expr['data']['row_ids'][i]: i for i in range(0, len(expr['data']['row_ids']))}
- 
- 
-        # parse clustering results
-        cid2genelist = {}
-        with open("{0}/{1}".format(CLSTR_DIR, CLSTR_FN),'r') as glh:
-            glh.readline() # skip header
-            for line in glh:
-                gene, cluster = line.replace('"','').split("\t")
-                if cluster not in cid2genelist:
-                    cid2genelist[cluster] = []
-                cid2genelist[cluster].append(gene)
- 
-        if(len(cid2genelist) < 1) :
-          logger.error("Clustering failed")
-          return empty_results("Error: No cluster output", expr,workspace_service_url, param, logger, ws)
-          #sys.exit(4)
- 
-        logger.info("Uploading the results onto WS")
-        feature_clusters = []
-        for cluster in cid2genelist:
-            feature_clusters.append( { "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
-                
- 
-        ## Upload Clusters
-        feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
-                           "feature_clusters": feature_clusters}
- 
-        ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
-                                                                          'data' : feature_clusters,
-                                                                          'name' : (param['out_object_name'])}]})
-        #END filter_genes
-
-        # At some point might do deeper type checking...
-        if not isinstance(job_id, list):
-            raise ValueError('Method filter_genes return value ' +
-                             'job_id is not type list as required.')
-        # return the results
-        return [job_id]
-
-    def const_coex_net_clust(self, ctx, args):
-        # ctx is the context object
-        # return variables are: job_id
-        #BEGIN const_coex_net_clust
-        try:
-            os.makedirs(RAWEXPR_DIR)
-        except:
-            pass
-        try:
-            os.makedirs(FLTRD_DIR)
-        except:
-            pass
-        try:
-            os.makedirs(FINAL_DIR)
-        except:
-            pass
- 
-        if logger is None:
-            logger = script_utils.stderrlogger(__file__)
-        
-        logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
-        token = os.environ.get("KB_AUTH_TOKEN")
- 
-        with open(param_file) as paramh:
-          param = json.load(paramh)
- 
- 
-        from biokbase.workspace.client import Workspace
-        ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
-        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
- 
- 
-        cmd_dowload_cvt_tsv = [FVE_2_TSV, '--workspace_service_url', workspace_service_url, 
-                                          '--workspace_name', param['workspace_name'],
-                                          '--object_name', param['object_name'],
-                                          '--working_directory', RAWEXPR_DIR,
-                                          '--output_file_name', EXPRESS_FN
-                              ]
- 
-        # need shell in this case because the java code is depending on finding the KBase token in the environment
-        #  -- copied from FVE_2_TSV
-        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True)
-        stdout, stderr = tool_process.communicate()
-        
-        if stdout is not None and len(stdout) > 0:
-            logger.info(stdout)
- 
-        if stderr is not None and len(stderr) > 0:
-            logger.info(stderr)
- 
-        logger.info("Identifying differentially expressed genes")
- 
-        ## Prepare sample file
-        # detect num of columns
-        with open("{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), 'r') as f:
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 'r') as f:
           fl = f.readline()
         ncol = len(fl.split('\t'))
         
         # force to use ANOVA if the number of sample is two
         if(ncol == 3): param['method'] = 'anova'
  
-        with open("{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN), 'wt') as s:
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN), 'wt') as s:
           s.write("0")
           for j in range(1,ncol-1):
             s.write("\t{0}".format(j))
@@ -346,9 +209,9 @@ It will serve queries for tissue or condition specific co-expression network for
  
  
         ## Run coex_filter
-        cmd_coex_filter = [COEX_FILTER, '-i', "{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), '-o', "{0}/{1}".format(FLTRD_DIR, FLTRD_FN),
-                           '-m', param['method'], '-s', "{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN),
-                           '-x', "{0}/{1}".format(RAWEXPR_DIR, GENELST_FN), '-t', 'y']
+        cmd_coex_filter = [self.COEX_FILTER, '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), '-o', "{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN),
+                           '-m', param['method'], '-s', "{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN),
+                           '-x', "{0}/{1}".format(self.RAWEXPR_DIR, self.GENELST_FN), '-t', 'y']
         if 'num_features' in param:
           cmd_coex_filter.append("-n")
           cmd_coex_filter.append(str(param['num_features']))
@@ -358,76 +221,76 @@ It will serve queries for tissue or condition specific co-expression network for
           cmd_coex_filter.append(str(param['p_value']))
  
         if 'p_value' not in param and 'num_features' not in param:
-          logger.error("One of p_value or num_features must be defined");
-          return empty_results("One of p_value or num_features must be defined", expr,workspace_service_url, param, logger, ws)
+          self.logger.error("One of p_value or num_features must be defined");
+          return empty_results("One of p_value or num_features must be defined", expr,self.__WS_URL, param, self.logger, ws)
           #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
  
         #if 'p_value' in param and 'num_features' in param:
-        #  logger.error("Both of p_value and num_features cannot be defined together");
+        #  self.logger.error("Both of p_value and num_features cannot be defined together");
         #  sys.exit(3)
  
         tool_process = subprocess.Popen(cmd_coex_filter, stderr=subprocess.PIPE)
         stdout, stderr = tool_process.communicate()
         
         if stdout is not None and len(stdout) > 0:
-            logger.info(stdout)
+            self.logger.info(stdout)
  
         if stderr is not None and len(stderr) > 0:
-            logger.info(stderr)
+            self.logger.info(stderr)
  
         ## Header correction
         try:
-            with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'r') as ff:
+            with open("{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN), 'r') as ff:
                 fe = ff.readlines()
-            with open("{0}/{1}".format(FLTRD_DIR, FLTRD_FN), 'w') as ff:
+            with open("{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN), 'w') as ff:
                 ff.write(fl) # use original first line that has correct header information
                 fe.pop(0)
                 ff.writelines(fe)
         except:
-            logger.error("Output was not found");
-            return empty_results("Increase p_value or specify num_features", expr,workspace_service_url, param, logger, ws)
+            self.logger.error("Output was not found");
+            return empty_results("Increase p_value or specify num_features", expr,self.__WS_URL, param, self.logger, ws)
             
         
         ## checking genelist
-        with open("{0}/{1}".format(RAWEXPR_DIR, GENELST_FN),'r') as glh:
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.GENELST_FN),'r') as glh:
           gl = glh.readlines()
         gl = [x.strip('\n') for x in gl]
  
         if(len(gl) < 1) :
-          logger.error("No genes are selected")
-          return empty_results("Increase p_value or specify num_features", expr,workspace_service_url, param, logger, ws)
+          self.logger.error("No genes are selected")
+          return empty_results("Increase p_value or specify num_features", expr,self.__WS_URL, param, self.logger, ws)
           #sys.exit(4)
  
         ## Upload FVE
         # change workspace to be the referenced object's workspace_name because it may not be in the same working ws due to referencing
         # Updates: change missing genome handling strategy by copying reference to working workspace
-        cmd_upload_expr = [TSV_2_FVE, '--workspace_service_url', workspace_service_url, 
+        cmd_upload_expr = [self.TSV_2_FVE, '--workspace_service_url', self.__WS_URL, 
                                           '--object_name', param['out_expr_object_name'],
-                                          '--working_directory', FINAL_DIR,
-                                          '--input_directory', FLTRD_DIR,
-                                          '--output_file_name', FINAL_FN
+                                          '--working_directory', self.FINAL_DIR,
+                                          '--input_directory', self.FLTRD_DIR,
+                                          '--output_file_name', self.FINAL_FN
                               ]
         tmp_ws = param['workspace_name']
         if 'genome_ref' in expr:
             obj_infos = ws.get_object_info_new({"objects": [{'ref':expr['genome_ref']}]})[0]
  
             if len(obj_infos) < 1:
-                logger.error("Couldn't find {0} from the workspace".format(expr['genome_ref']))
+                self.logger.error("Couldn't find {0} from the workspace".format(expr['genome_ref']))
                 raise Exception("Couldn't find {0} from the workspace".format(expr['genome_ref']))
  
             #tmp_ws = "{0}".format(obj_infos[7])
-            logger.info("{0} => {1} / {2}".format(expr['genome_ref'], obj_infos[7], obj_infos[1]))
+            self.logger.info("{0} => {1} / {2}".format(expr['genome_ref'], obj_infos[7], obj_infos[1]))
             if obj_infos[7] != param['workspace_name']:
                 #we need to copy it from the other workspace
                 try:
-                  logger.info("trying to copy the referenced genome object : {0}".format(expr['genome_ref']))
+                  self.logger.info("trying to copy the referenced genome object : {0}".format(expr['genome_ref']))
                   ws.copy_object({'from' : {'ref' : expr['genome_ref']},'to' : {'workspace': param['workspace_name'], 'name' : obj_infos[1]}})
                   # add genome_object_name only after successful copy
                   cmd_upload_expr.append('--genome_object_name')
                   cmd_upload_expr.append(obj_infos[1])
                 except:
                   # no permission or any issues... then, give up providing genome reference
-                  logger.info("".join(traceback.format_exc()))
+                  self.logger.info("".join(traceback.format_exc()))
                   pass
             else:
                 # it is local... we can simply add reference without copying genome
@@ -438,19 +301,19 @@ It will serve queries for tissue or condition specific co-expression network for
         cmd_upload_expr.append('--workspace_name')
         cmd_upload_expr.append(tmp_ws)
  
-        logger.info(" ".join(cmd_upload_expr))
+        self.logger.info(" ".join(cmd_upload_expr))
  
-        tool_process = subprocess.Popen(" ".join(cmd_upload_expr), stderr=subprocess.PIPE, shell=True)
+        tool_process = subprocess.Popen(" ".join(cmd_upload_expr), stderr=subprocess.PIPE, shell=True, env=eenv)
         stdout, stderr = tool_process.communicate()
         
         if stdout is not None and len(stdout) > 0:
-            logger.info(stdout)
+            self.logger.info(stdout)
  
         if stderr is not None and len(stderr) > 0:
-            logger.info(stderr)
+            self.logger.info(stderr)
  
         
-        with open("{0}/{1}".format(FINAL_DIR,FINAL_FN),'r') as et:
+        with open("{0}/{1}".format(self.FINAL_DIR,self.FINAL_FN),'r') as et:
           eo = json.load(et)
  
         if 'description' not in expr: 
@@ -480,11 +343,152 @@ It will serve queries for tissue or condition specific co-expression network for
         ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseCollections.FeatureSet',
                                                                               'data' : fs,
                                                                               'name' : (param['out_fs_object_name'])}]})
+        result = {'workspace_name' : param['workspace_name'], 'out_expr_object_name' : param['out_expr_object_name'], 'out_fs_object_name' : param['out_fs_object_name']}
+        #END filter_genes
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method filter_genes return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def const_coex_net_clust(self, ctx, args):
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN const_coex_net_clust
+        try:
+            os.makedirs(self.RAWEXPR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.CLSTR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FINAL_DIR)
+        except:
+            pass
+ 
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
+        
+        result = {}
+        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        token = ctx['token']
+
+        param = args
+ 
+        from biokbase.workspace.client import Workspace
+        ws = Workspace(url=self.__WS_URL, token=token)
+        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+ 
+ 
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+                                          '--workspace_name', param['workspace_name'],
+                                          '--object_name', param['object_name'],
+                                          '--working_directory', self.RAWEXPR_DIR,
+                                          '--output_file_name', self.EXPRESS_FN
+                              ]
+ 
+        # need shell in this case because the java code is depending on finding the KBase token in the environment
+        #  -- copied from FVE_2_TSV
+        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+            #raise Exception(stderr)
+ 
+        self.logger.info("Coexpression clustering analysis")
+ 
+        ## Prepare sample file
+        # detect num of columns
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 'r') as f:
+          fl = f.readline()
+        ncol = len(fl.split('\t'))
+        
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN), 'wt') as s:
+          s.write("0")
+          for j in range(1,ncol-1):
+            s.write("\t{0}".format(j))
+          s.write("\n")
+ 
+ 
+        ## Run coex_cluster
+        cmd_coex_cluster = [self.COEX_CLUSTER, '-t', 'y',
+                           '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 
+                           '-o', "{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN)]
+ 
+        for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
+           if p in param:
+             cmd_coex_cluster.append("--{0}".format(p))
+             cmd_coex_cluster.append(str(param[p]))
+  
+ 
+        #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
+ 
+        #if 'p_value' in param and 'num_features' in param:
+        #  self.logger.error("Both of p_value and num_features cannot be defined together");
+        #  sys.exit(3)
+ 
+        tool_process = subprocess.Popen(cmd_coex_cluster, stderr=subprocess.PIPE)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            if re.search(r'^There were \d+ warnings \(use warnings\(\) to see them\)', stderr):
+              self.logger.info(stderr)
+            else:
+              self.logger.error(stderr)
+              raise Exception(stderr)
+ 
+        
+        # build index for gene list
+        pos_index ={expr['data']['row_ids'][i]: i for i in range(0, len(expr['data']['row_ids']))}
+ 
+ 
+        # parse clustering results
+        cid2genelist = {}
+        with open("{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN),'r') as glh:
+            glh.readline() # skip header
+            for line in glh:
+                gene, cluster = line.replace('"','').split("\t")
+                if cluster not in cid2genelist:
+                    cid2genelist[cluster] = []
+                cid2genelist[cluster].append(gene)
+ 
+        if(len(cid2genelist) < 1) :
+          self.logger.error("Clustering failed")
+          return empty_results("Error: No cluster output", expr,self.__WS_URL, param, self.logger, ws)
+          #sys.exit(4)
+ 
+        self.logger.info("Uploading the results onto WS")
+        feature_clusters = []
+        for cluster in cid2genelist:
+            feature_clusters.append( { "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
+                
+ 
+        ## Upload Clusters
+        feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
+                           "feature_clusters": feature_clusters}
+ 
+        ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
+                                                                          'data' : feature_clusters,
+                                                                          'name' : (param['out_object_name'])}]})
+        result = {'workspace_name' : param['workspace_name'], 'out_object_name' : param['out_object_name']}
         #END const_coex_net_clust
 
         # At some point might do deeper type checking...
-        if not isinstance(job_id, list):
+        if not isinstance(result, dict):
             raise ValueError('Method const_coex_net_clust return value ' +
-                             'job_id is not type list as required.')
+                             'result is not type dict as required.')
         # return the results
-        return [job_id]
+        return [result]

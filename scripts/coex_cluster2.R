@@ -120,6 +120,7 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   } else if (method == 'WGCNA' || method == 'w') {
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE))
     suppressPackageStartupMessages(library('reshape', quiet = TRUE))
+    suppressPackageStartupMessages(library('flashClust', quiet = TRUE))
     #allowWGCNAThreads()
     TOM = TOMsimilarity(adjmat, verbose = 0)
     dissTOM = 1 - TOM

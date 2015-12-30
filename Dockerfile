@@ -8,10 +8,14 @@ RUN \
   git clone https://github.com/kbase/jars && \
   rm -rf kb_sdk && \
   git clone https://github.com/kbase/kb_sdk -b develop && \
+  rm -rf transform && \
+  git clone https://github.com/kbase/transform && \
   cd /kb/dev_container/modules/jars && \
   make deploy && \
   cd /kb/dev_container/modules/kb_sdk && \
-  make && make deploy
+  make && make deploy && \
+  cd /kb/dev_container/modules/transform && \
+  make && make deploy 
 
 ####END OF KBASE #############################
 #apt-get update && apt-get install -y ant && \
@@ -24,8 +28,10 @@ RUN pip install mpipe
 WORKDIR /kb/module
 COPY ./deps /kb/deps
 ### R install docker file: https://github.com/rocker-org/rocker/blob/master/rstudio/Dockerfile
-RUN \
-  bash /kb/deps/WGCNA/install-r-packages.sh 
+# the following would not correctly have TARGET, so that the installation would be unused in the end
+#RUN \
+#  . /kb/dev_container/user-env.sh && \
+#  bash /kb/deps/WGCNA/install-r-packages.sh 
 
 COPY ./ /kb/module
 RUN \
