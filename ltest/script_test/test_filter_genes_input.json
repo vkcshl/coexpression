@@ -1,0 +1,15 @@
+{    
+    "version":"1.1",
+    "method":"CoExpression.filter_genes",
+    "context": null,
+    "params":[     
+            {
+              "workspace_name": "coex_ftr_tst",
+              "object_name": "E_coli_v4_Build_6_impute_1",
+              "method": "anova",
+              "num_features": 100,
+              "out_expr_object_name": "coex_ftr_tst_expr",
+              "out_fs_object_name": "coex_ftr_tst_fs"
+            }
+    ]    
+}

@@ -13,6 +13,7 @@ import string
 import subprocess
 from os import environ
 from ConfigParser import ConfigParser
+import re
 
 # 3rd party imports
 import requests
@@ -26,11 +27,14 @@ FVE_2_TSV = 'trns_transform_KBaseFeatureValues_ExpressionMatrix_to_TSV'
 TSV_2_FVE = 'trns_transform_TSV_Exspression_to_KBaseFeatureValues_ExpressionMatrix'
 RAWEXPR_DIR = 'raw_dir'
 FLTRD_DIR = 'fltr_dir'
+CLSTR_DIR = 'clstr_dir'
 FINAL_DIR = 'final_dir'
 EXPRESS_FN = 'expression.tsv'
 SAMPLE_FN = 'sample.tsv'
 COEX_FILTER = 'coex_filter'
+COEX_CLUSTER = 'coex_cluster2'
 FLTRD_FN = 'filtered.tsv'
+CLSTR_FN = 'clusters.tsv'
 FINAL_FN = 'filtered.json'
 GENELST_FN = 'selected.tsv'
 
@@ -47,14 +51,168 @@ def empty_results(err_msg, expr, workspace_service_url, param, logger, ws):
                                                                           'data' : expr,
                                                                           'name' : (param['out_expr_object_name'])}]})
 
-    ## Upload FeatureSet
-    # Empty element feature set was not properly handled by widget, so skip it
-    #fs ={'elements': {}}
-    #fs['description'] = "Empty FeatureSet by '{0}' method; {1}".format(param['method'], err_msg)
+def empty_cluster_results(err_msg, expr, workspace_service_url, param, logger, ws):
 
-    #ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseCollections.FeatureSet',
-    #                                                                      'data' : fs,
-    #                                                                      'name' : (param['out_fs_object_name'])}]})
+    #clrst = {'feature_clusters' : [{'id_to_pos' : {} }], 
+    clrst = {'feature_clusters' : [], 
+             'report' : { 
+                 'checkTypeDetected' : '',
+                 'checkUsed' : '',
+                 'checkDescriptions' : [],
+                 'checkResults' : [],
+                 'messages' : [],
+                 'warnings' : [],
+                 'errors' : [err_msg]
+                        }
+            }
+
+    ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
+                                                                          'data' : clrst,
+                                                                          'name' : (param['out_object_name'])}]})
+
+def run_coex_cluster(workspace_service_url=None, param_file = None, level=logging.INFO, logger = None):
+    """
+    Narrative Job Wrapper script to execute coex_cluster2
+    
+    Args:
+        workspace_service_url:  A url for the KBase Workspace service 
+        param_file: parameter file
+        object_name: Name of the object in the workspace 
+        level: Logging level, defaults to logging.INFO.
+    
+    Returns:
+        Output is written back in WS
+    
+    Authors:
+        Shinjae Yoo
+    
+    """ 
+
+    try:
+        os.makedirs(RAWEXPR_DIR)
+    except:
+        pass
+    try:
+        os.makedirs(CLSTR_DIR)
+    except:
+        pass
+    try:
+        os.makedirs(FINAL_DIR)
+    except:
+        pass
+
+    if logger is None:
+        logger = script_utils.stderrlogger(__file__)
+    
+    logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+    token = os.environ.get("KB_AUTH_TOKEN")
+
+    with open(param_file) as paramh:
+      param = json.load(paramh)
+
+
+    from biokbase.workspace.client import Workspace
+    ws = Workspace(url=workspace_service_url, token=os.environ['KB_AUTH_TOKEN'])
+    expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+
+
+    cmd_dowload_cvt_tsv = [FVE_2_TSV, '--workspace_service_url', workspace_service_url, 
+                                      '--workspace_name', param['workspace_name'],
+                                      '--object_name', param['object_name'],
+                                      '--working_directory', RAWEXPR_DIR,
+                                      '--output_file_name', EXPRESS_FN
+                          ]
+
+    # need shell in this case because the java code is depending on finding the KBase token in the environment
+    #  -- copied from FVE_2_TSV
+    tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True)
+    stdout, stderr = tool_process.communicate()
+    
+    if stdout is not None and len(stdout) > 0:
+        logger.info(stdout)
+
+    if stderr is not None and len(stderr) > 0:
+        logger.info(stderr)
+        #raise Exception(stderr)
+
+    logger.info("Coexpression clustering analysis")
+
+    ## Prepare sample file
+    # detect num of columns
+    with open("{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), 'r') as f:
+      fl = f.readline()
+    ncol = len(fl.split('\t'))
+    
+    with open("{0}/{1}".format(RAWEXPR_DIR, SAMPLE_FN), 'wt') as s:
+      s.write("0")
+      for j in range(1,ncol-1):
+        s.write("\t{0}".format(j))
+      s.write("\n")
+
+
+    ## Run coex_cluster
+    cmd_coex_cluster = [COEX_CLUSTER, '-t', 'y',
+                       '-i', "{0}/{1}".format(RAWEXPR_DIR, EXPRESS_FN), 
+                       '-o', "{0}/{1}".format(CLSTR_DIR, CLSTR_FN)]
+
+    for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
+       if p in param:
+         cmd_coex_cluster.append("--{0}".format(p))
+         cmd_coex_cluster.append(str(param[p]))
+ 
+
+    #sys.exit(2) #TODO: No error handling in narrative so we do graceful termination
+
+    #if 'p_value' in param and 'num_features' in param:
+    #  logger.error("Both of p_value and num_features cannot be defined together");
+    #  sys.exit(3)
+
+    tool_process = subprocess.Popen(cmd_coex_cluster, stderr=subprocess.PIPE)
+    stdout, stderr = tool_process.communicate()
+    
+    if stdout is not None and len(stdout) > 0:
+        logger.info(stdout)
+
+    if stderr is not None and len(stderr) > 0:
+        if re.search(r'^There were \d+ warnings \(use warnings\(\) to see them\)', stderr):
+          logger.info(stderr)
+        else:
+          logger.error(stderr)
+          raise Exception(stderr)
+
+    
+    # build index for gene list
+    pos_index ={expr['data']['row_ids'][i]: i for i in range(0, len(expr['data']['row_ids']))}
+
+
+    # parse clustering results
+    cid2genelist = {}
+    with open("{0}/{1}".format(CLSTR_DIR, CLSTR_FN),'r') as glh:
+        glh.readline() # skip header
+        for line in glh:
+            gene, cluster = line.replace('"','').split("\t")
+            if cluster not in cid2genelist:
+                cid2genelist[cluster] = []
+            cid2genelist[cluster].append(gene)
+
+    if(len(cid2genelist) < 1) :
+      logger.error("Clustering failed")
+      return empty_results("Error: No cluster output", expr,workspace_service_url, param, logger, ws)
+      #sys.exit(4)
+
+    logger.info("Uploading the results onto WS")
+    feature_clusters = []
+    for cluster in cid2genelist:
+        feature_clusters.append( { "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
+            
+
+    ## Upload Clusters
+    feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
+                       "feature_clusters": feature_clusters}
+
+    ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
+                                                                          'data' : feature_clusters,
+                                                                          'name' : (param['out_object_name'])}]})
 
 def run_filter_genes(workspace_service_url=None, param_file = None, level=logging.INFO, logger = None):
     """
@@ -144,11 +302,11 @@ def run_filter_genes(workspace_service_url=None, param_file = None, level=loggin
                        '-x', "{0}/{1}".format(RAWEXPR_DIR, GENELST_FN), '-t', 'y']
     if 'num_features' in param:
       cmd_coex_filter.append("-n")
-      cmd_coex_filter.append(param['num_features'])
+      cmd_coex_filter.append(str(param['num_features']))
 
     if 'p_value' in param:
       cmd_coex_filter.append("-p")
-      cmd_coex_filter.append(param['p_value'])
+      cmd_coex_filter.append(str(param['p_value']))
 
     if 'p_value' not in param and 'num_features' not in param:
       logger.error("One of p_value or num_features must be defined");
@@ -292,11 +450,14 @@ if __name__ == "__main__":
 
     logger = script_utils.stderrlogger(__file__)
     try:
-        ret_json = run_filter_genes(args.ws_url, args.param_file, logger=logger)
-        
-        #logger.info("Writing out JSON.")
-        #with open(args.output_filename, "w") as outFile:
-        #    outFile.write(json.dumps(ret_json,sort_keys = True, indent = 4))
+        #ret_json = run_coex_cluster(args.ws_url, args.param_file, logger=logger)
+        if args.command == 'coex_filter':
+            ret_json = run_filter_genes(args.ws_url, args.param_file, logger=logger)
+        elif args.command == "coex_cluster":
+            ret_json = run_coex_cluster(args.ws_url, args.param_file, logger=logger)
+        else:
+            logger.error("No defined method -{0}, please check your method name.".format(args.command))
+            raise Exception("No defined method '{0}', please check your method name.".format(args.command))
         
    	logger.info("Execution completed.")
     except:

@@ -100,7 +100,7 @@ filter_data = function(data, genes1, genes2) {
   return (data)
 }
 
-coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSize = 30, detectCutHeight = 0.99,data) {
+coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSize = 30, detectCutHeight = 0.99, tsv ='y', data) {
   if (is.na(method)) { method = 'WGCNA' }
   if (is.na(minModuleSize)) { minModuleSize = 30 }
   if (is.na(detectCutHeight)) { detectCutHeight = 0.99 }
@@ -120,6 +120,7 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   } else if (method == 'WGCNA' || method == 'w') {
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE))
     suppressPackageStartupMessages(library('reshape', quiet = TRUE))
+    suppressPackageStartupMessages(library('flashClust', quiet = TRUE))
     #allowWGCNAThreads()
     TOM = TOMsimilarity(adjmat, verbose = 0)
     dissTOM = 1 - TOM
@@ -144,12 +145,21 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   eigen_adjmat=cor(MEs$eigengenes,use='p')
   x = eigen_adjmat; x[upper.tri(eigen_adjmat)] = 0; mod_edgelist = melt(x); mod_edgelist = mod_edgelist[mod_edgelist$value!=0&mod_edgelist[,1]!=mod_edgelist[,2],]
   colnames(mod_edgelist)=c('node 1','node 2','weight')
-  write.csv(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.csv', sep=""), row.names = F) 
+  
+  if(tsv == 'y') {
+    write.table(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.tsv'), sep="\t", row.names = F) 
+  } else {
+    write.csv(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.csv'), sep="", row.names = F) 
+  }
   clusterInfo = data.frame(Gene = colnames(adjmat), module = modulenames)
   if (is.na(outFileName)) {
     outFileName = paste('coex_cluster_method=', method, '.csv', sep="")
   }
-  write.csv(clusterInfo, file = outFileName, row.names = FALSE)  
+  if(tsv == 'y') {
+    write.table(clusterInfo, file = outFileName, row.names = FALSE, sep="\t")  
+  } else {
+    write.csv(clusterInfo, file = outFileName, row.names = FALSE)  
+  }
 }
 
 # argument parsing
@@ -176,7 +186,9 @@ option_list=list(
   make_option(c("-d", "--detectCutHeight"), type="double", default=0.99,
               help="Maximum heights to join modules in clustering. [default %default]"), 
   make_option(c("-o", "--output"),dest="outFileName",type="character",default="coex_modules.csv",
-              help="Output file that stores the clustering results. The first column is gene, and the second column is the corresponding module. [default \"%default\"]") 
+              help="Output file that stores the clustering results. The first column is gene, and the second column is the corresponding module. [default \"%default\"]"),
+  make_option(c("-t", "--tab_delim"),type="character",default='n',
+              help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 ) 
 
 # pass arguments
@@ -210,6 +222,7 @@ outFileName = opt$outFileName
 minRsq = opt$minRsq
 maxmediank = opt$maxmediank
 maxpower = opt$maxpower
+tab_delim = opt$tab_delim
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -218,13 +231,26 @@ if (opt$help) {
 # prepare data
 options(stringsAsFactors=FALSE)
 if (is.null(file_name)) {stop("please give your input file name $./coex_net.r -i [your input file name]") }
-data = as.data.frame(read.csv(file_name, header = T, row.names = 1, stringsAsFactors = FALSE))
+if(tab_delim == 'y'){ # inefficient but minimal testing
+  data = as.data.frame(read.csv(file_name, header = TRUE, sep = "\t", row.names = 1, stringsAsFactors = FALSE))
+} else {
+  data = as.data.frame(read.csv(file_name, header = TRUE, row.names = 1, stringsAsFactors = FALSE))
+}
+#data = as.data.frame(read.csv(file_name, header = T, row.names = 1, stringsAsFactors = FALSE))
 g1file = opt$genes1
 g2file = opt$genes2
 if (!is.null(g1file) && !is.null(g2file))
 {
-  g1 = read.csv(g1file)
-  g2 = read.csv(g2file)
+  if(tab_delim == 'y'){ # inefficient but minimal testing
+    g1 = (read.csv(g1file, header = FALSE, sep = "\t", stringsAsFactors = FALSE))
+    g2 = (read.csv(g2file, header = FALSE, sep = "\t", stringsAsFactors = FALSE))
+  } else {
+    g1 = read.csv(g1file)
+    g2 = read.csv(g2file)
+  }
+  
+  #g1 = read.csv(g1file)
+  #g2 = read.csv(g2file)
   genes = unique(rbind(g1, g2)[,1])
   gNum1 = length(genes)
   rnames = rownames(data)
@@ -246,4 +272,4 @@ if (!is.null(g1file) && !is.null(g2file))
 #coex_cluster2(data=data,outFileName=outFileName,clust_method=clust_method,net_method=net_method,minRsq=minRsq,maxmediank=maxmediank,maxpower=maxpower,minModuleSize=minModuleSize,detectCutHeight=detectCutHeight)
 
 adjmat = coex_net(data, geneList1 = g1, geneList2 = g2, output_type = 'adjmat', method = net_method, minRsq = minRsq, maxmediank = maxmediank, maxpower = maxpower)
-coex_cluster(adjmat, method = clust_method, outFileName = outFileName, minModuleSize = minModuleSize, detectCutHeight = detectCutHeight,data=data)
+coex_cluster(adjmat, method = clust_method, outFileName = outFileName, minModuleSize = minModuleSize, detectCutHeight = detectCutHeight, tsv=tab_delim, data=data)
