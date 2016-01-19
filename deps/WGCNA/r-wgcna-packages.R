@@ -6,5 +6,5 @@ biocLite(lib = "[% rlib %]")
 #try(biocLite("BiocUpgrade", ask=FALSE, lib = "[% rlib %]" ))
 
 ## Now ready to install WGCNA
-biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore"), lib = "[% rlib %]")
+biocLite(c("AnnotationDbi", "impute", "GO.db", "preprocessCore", "limma"), lib = "[% rlib %]")
 install.packages ("WGCNA", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
