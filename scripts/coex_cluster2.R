@@ -28,16 +28,29 @@ coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple',
     datExpr = t(data)
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE)); options(stringsAsFactors=FALSE)
     allowWGCNAThreads()
-    powers = c(1:maxpower)
+    powers = c(c(1:20),seq(from=1, to=20,by=2))
     sft = pickSoftThreshold(datExpr, powerVector = powers, networkType = "signed", verbose = 0)  
     sft_table = sft$fitIndices
     select_cond = sft_table$SFT.R.sq > minRsq & sft_table$median.k <= maxmediank
     if (sum(select_cond) == 0) { stop("No satisfied power found. Please decrease minRsq or increase maxpower.") }
     softPower = min(sft_table[select_cond, 'Power'])
     adjmat = adjacency(datExpr, power = softPower, type = 'signed', corFnc = "cor", corOptions = "use = 'p',method = 'pearson'")
+  
+  
+#add some code to visualize the effect of different powers. By Fei, Jan 22, 2016
+    png(filename='scale-free-fit.png')
+    plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],xlab='Power', ylab='Scale Free Topology Model Fit,R^2', type="n",main = paste("Scale independence"))
+    text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],labels=powers,col="red");
+    dev.off()
+#end
+
+  
+  
   } else {
     stop("Please indicate a correct method. See help")
   }
+
+
   
   if (output_type == 'edge' || output_type == 'e') {
     if (is.na(corr_thld)) {
