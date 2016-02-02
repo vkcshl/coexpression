@@ -73,6 +73,18 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
   if (is.na(outFileName)) {
     outFileName = "Gene_expression_data_preprocessed_for_clustering.csv"
   }  
+
+
+#generate a plot to show the distribution of p-values. Added by Fei, Jan 21, 2016
+  iw=as.matrix(gene_p)
+  iw=-log10(iw)
+  png(filename='pv_distribution.png')
+  hist(iw,50,main='Histogram of P-values',xlab='-log10(P-value)',col='green')
+  dev.off()
+#end
+
+
+
   if(tsv == 'y') {
     write.table(data_filter, file = outFileName, sep="\t", row.names = TRUE)
   } else {
