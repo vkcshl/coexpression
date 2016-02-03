@@ -1,5 +1,5 @@
 {
-  "name" : "Filtering Expression",
+  "name" : "View P-value Distribution",
   "ver" : "1.0.0",
   "authors" : [ ],
   "contact" : "help@kbase.us",
@@ -7,7 +7,7 @@
   "categories" : ["active"],
   "widgets" : {
     "input" : null,
-    "output" : "kbaseExpressionMatrix"
+    "output" : "kbasePValueHistogram"
   },
   "parameters" : [ {
       "id" : "expression",
@@ -68,7 +68,7 @@
     "service-mapping" : {
       "url" : "",
       "name" : "CoExpression",
-      "method" : "filter_genes",
+      "method" : "diff_p_distribution",
       "input_mapping" : [
         {
           "input_parameter" : "expression",
