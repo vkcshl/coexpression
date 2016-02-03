@@ -6,7 +6,7 @@ invR = function(p, df) {
   return (r)
 }
 
-coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple', output_type = 'edge', outFileName = "", corr_thld = NA, p_thld = NULL, minRsq = 0.8, maxmediank = 40, maxpower = 50) {
+coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple', output_type = 'edge', outFileName = "", corr_thld = NA, p_thld = NULL, minRsq = 0.8, maxmediank = 40, maxpower = 50, plotfn = 'power_distribution.png', jsonfn = 'power_distribution.json') {
   if (is.na(method)) { method = 'simple' }
   if (is.na(output_type)) { method = 'edge' }
   if (is.na(corr_thld) && is.null(p_thld)) { corr_thld = 0.75 }
@@ -29,6 +29,7 @@ coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple',
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE)); options(stringsAsFactors=FALSE)
     allowWGCNAThreads()
     powers = c(c(1:20),seq(from=1, to=20,by=2))
+    print(powers)
     sft = pickSoftThreshold(datExpr, powerVector = powers, networkType = "signed", verbose = 0)  
     sft_table = sft$fitIndices
     select_cond = sft_table$SFT.R.sq > minRsq & sft_table$median.k <= maxmediank
@@ -43,6 +44,7 @@ coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple',
     text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],labels=powers,col="red");
     dev.off()
 #end
+    
 
   
   
@@ -200,6 +202,10 @@ option_list=list(
               help="Maximum heights to join modules in clustering. [default %default]"), 
   make_option(c("-o", "--output"),dest="outFileName",type="character",default="coex_modules.csv",
               help="Output file that stores the clustering results. The first column is gene, and the second column is the corresponding module. [default \"%default\"]"),
+  make_option(c("-l", "--plotpv"), type = "character", default = 'power_distribution.png', 
+              help = "Output p-value distribution file name. [default \"%default\"]"), 
+  make_option(c("-j", "--jsonpv"), type = "character", default = 'power_distribution.json', 
+              help = "Output p-value list json file name. [default \"%default\"]"), 
   make_option(c("-t", "--tab_delim"),type="character",default='n',
               help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 ) 
@@ -236,6 +242,8 @@ minRsq = opt$minRsq
 maxmediank = opt$maxmediank
 maxpower = opt$maxpower
 tab_delim = opt$tab_delim
+plotfn = opt$plotpv
+jsonfn = opt$jsonpv
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -284,5 +292,5 @@ if (!is.null(g1file) && !is.null(g2file))
 
 #coex_cluster2(data=data,outFileName=outFileName,clust_method=clust_method,net_method=net_method,minRsq=minRsq,maxmediank=maxmediank,maxpower=maxpower,minModuleSize=minModuleSize,detectCutHeight=detectCutHeight)
 
-adjmat = coex_net(data, geneList1 = g1, geneList2 = g2, output_type = 'adjmat', method = net_method, minRsq = minRsq, maxmediank = maxmediank, maxpower = maxpower)
+adjmat = coex_net(data, geneList1 = g1, geneList2 = g2, output_type = 'adjmat', method = net_method, minRsq = minRsq, maxmediank = maxmediank, maxpower = maxpower, plotfn = plotfn, jsonfn = jsonfn)
 coex_cluster(adjmat, method = clust_method, outFileName = outFileName, minModuleSize = minModuleSize, detectCutHeight = detectCutHeight, tsv=tab_delim, data=data)

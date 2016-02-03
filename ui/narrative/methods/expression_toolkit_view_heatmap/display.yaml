@@ -1,0 +1,41 @@
+#
+# Define basic display information
+#
+name     : View heatmap of expression levels
+tooltip  : |
+    View heatmap of expression levels
+
+screenshots :
+    []
+
+#
+# Define the set of other narrative methods that should be suggested to the user.
+#
+suggestions :
+    apps:
+        related :
+            []
+        next :
+            []
+    methods:
+        related :
+            []
+        next :
+            []
+
+#
+# Configure the display and description of the parameters
+#
+parameters :
+    expression :
+        ui-name : |
+            Expression Matrix
+        short-hint : |
+            Select the Expression Matrix to be visualized
+        long-hint  : |
+            Choose an Expression Matrix from your Data Panel to use with this method. You can upload an Expression Matrix into your Narrative by clicking the <i>Add Data</i> button and selecting the <i>Import</i> tab. Please run the method Associate Expression Matrix to Genome Features before running this method. 
+description : |
+    <p>This method display heat map of expressed genes.</p>
+     
+    <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
+

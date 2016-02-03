@@ -1,0 +1,56 @@
+{
+  "name" : "View Expression Heatmap",
+  "ver" : "1.0.0",
+  "authors" : [ ],
+  "contact" : "help@kbase.us",
+  "visble" : true,
+  "categories" : ["active"],
+  "widgets" : {
+    "input" : null,
+    "output" : "kbaseExpressionMatrixHeatmap"
+  },
+  "parameters" : [ {
+      "id" : "expression",
+      "optional" : false,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : [ "KBaseFeatureValues.ExpressionMatrix" ]
+      }
+    }
+  ],
+  "behavior" : {
+    "service-mapping" : {
+      "url" : "",
+      "name" : "CoExpression",
+      "method" : "view_heatmap",
+      "input_mapping" : [
+        {
+          "input_parameter" : "expression",
+          "target_property" : "in_obj_name"
+        },
+        {
+          "narrative_system_variable": "workspace",
+          "target_property" : "workspace_name"
+        }
+      ],
+      "output_mapping" : [
+        {
+          "input_parameter": "expression",
+          "target_property": "expression_object"
+        },
+        {
+          "narrative_system_variable": "workspace",
+          "target_property": "workspace"
+        },
+        {
+          "service_method_output_path": [],
+          "target_property": "job_id"
+        }
+      ]
+    }
+  },
+  "job_id_output_field" : "docker"
+}

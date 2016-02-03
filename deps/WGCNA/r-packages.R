@@ -7,3 +7,4 @@ install.packages("optparse", repos = "http://cran.wustl.edu", lib = "[% rlib %]"
 install.packages("reshape", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
 install.packages("flashClust", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
 install.packages("igraph", repos = "http://cran.wustl.edu", lib = "[% rlib %]")
+install.packages("jsonlite", repos = "http://cran.wustl.edu", lib = "[% rlib %]")

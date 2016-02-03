@@ -49,7 +49,11 @@ def empty_cluster_results(err_msg, expr, workspace_service_url, param, logger, w
 
     ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
                                                                           'data' : clrst,
+
                                                                           'name' : (param['out_object_name'])}]})
+
+def clean_up_expr_matrix(fn, logger):
+    
 
 #END_HEADER
 
@@ -62,14 +66,10 @@ class CoExpression:
     Module Description:
     Co-Expression Service APIs 
 
- This module provides services for plant expression data in support of the coexpression
- network and ontology driven data needs of the plant sciences community. This version of
- the modules supports retrieval of the following information:
- 1. Retrieval of GEO sample ID list for given EO (environmental ontology) and/or PO (plant ontology -plant tissues/organs of interest).
- 2. Retrieval of the expression values for given GEO sample ID list.  
- 3. For given expression values tables, it computes co-expression clusters or network (CLI only).
-
-It will serve queries for tissue or condition specific co-expression network for biologically interesting genes/samples. Users can search differentially expressed genes in different tissues or in numerous experimental conditions or treatments (e.g various biotic or abiotic stresses). Currently the metadata annotation is provided for a subset of gene expression experiments from the NCBI GEO microarray experiments for Arabidopsis and Poplar. The samples of these experiments are manually annotated using plant ontology (PO) [http://www.plantontology.org/] and environment ontology (EO) [http://obo.cvs.sourceforge.net/viewvc/obo/obo/ontology/phenotype/environment/environment_ontology.obo]
+ This module provides services in support of the coexpression network. 
+ The modules supports retrieval of the following information:
+ 1. Identify differentially expressed genes
+ 2. WGCNA clustering
     '''
 
     ######## WARNING FOR GEVENT USERS #######
@@ -92,6 +92,7 @@ It will serve queries for tissue or condition specific co-expression network for
     FLTRD_FN = 'filtered.tsv'
     CLSTR_FN = 'clusters.tsv'
     FINAL_FN = 'filtered.json'
+    PVFDT_FN = 'pv_distribution.json'
     GENELST_FN = 'selected.tsv'
     __WS_URL = 'https://ci.kbase.us/services/ws'
     __HS_URL = 'https://ci.kbase.us/services/handle_service'
@@ -136,6 +137,128 @@ It will serve queries for tissue or condition specific co-expression network for
         self.logger.info("Logger was set")
         #END_CONSTRUCTOR
         pass
+
+    def diff_p_distribution(self, ctx, args):
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN diff_p_distribution
+        try:
+            os.makedirs(self.RAWEXPR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FLTRD_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FINAL_DIR)
+        except:
+            pass
+ 
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
+        
+        result = {}
+        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        token = ctx['token']
+ 
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+
+        param = args
+ 
+ 
+        from biokbase.workspace.client import Workspace
+        ws = Workspace(url=self.__WS_URL, token=token)
+        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+ 
+ 
+        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+                                          '--workspace_name', param['workspace_name'],
+                                          '--object_name', param['object_name'],
+                                          '--working_directory', self.RAWEXPR_DIR,
+                                          '--output_file_name', self.EXPRESS_FN
+                              ]
+ 
+        # need shell in this case because the java code is depending on finding the KBase token in the environment
+        #  -- copied from FVE_2_TSV
+        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+ 
+        self.logger.info("Identifying differentially expressed genes")
+ 
+        ## Prepare sample file
+        # detect num of columns
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 'r') as f:
+          fl = f.readline()
+        ncol = len(fl.split('\t'))
+        
+        # force to use ANOVA if the number of sample is two
+        if(ncol == 3): param['method'] = 'anova'
+ 
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN), 'wt') as s:
+          s.write("0")
+          for j in range(1,ncol-1):
+            s.write("\t{0}".format(j))
+          s.write("\n")
+ 
+ 
+        ## Run coex_filter
+        cmd_coex_filter = [self.COEX_FILTER, '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), '-o', "{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN),
+                           '-m', param['method'], '-s', "{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN),
+                           '-x', "{0}/{1}".format(self.RAWEXPR_DIR, self.GENELST_FN), '-t', 'y', '-j', self.PVFDT_FN]
+        if 'num_features' in param:
+          cmd_coex_filter.append("-n")
+          cmd_coex_filter.append(str(param['num_features']))
+ 
+        if 'p_value' in param:
+          cmd_coex_filter.append("-p")
+          cmd_coex_filter.append(str(param['p_value']))
+ 
+ 
+        tool_process = subprocess.Popen(cmd_coex_filter, stderr=subprocess.PIPE)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+ 
+        ## loading pvalue distribution FDT
+        pvfdt = {};
+        with open(self.PVFDT_FN, 'r') as myfile:
+           pvfdt = json.load(myfile)
+ 
+ 
+        fig_properties = {"xlabel" : "-log2(p-value)", "ylabel" : "Number of features", "xlog_mode" : "-log2", "ylog_mode" : "none", "title" : "Histogram of P-values", "plot_type" : "histogram"}
+        #"data_ref" : "4997/1/1"
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+                                                                              'data' : pvfdt,
+                                                                              'name' : (param['out_data_object_name'])}]})
+
+        data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
+        fig_properties['data_ref'] = data_ref
+
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+                                                                              'data' : fig_properties,
+                                                                              'name' : (param['out_figure_object_name'])}]})
+ 
+        result = fig_properties
+        #END diff_p_distribution
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method diff_p_distribution return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
 
     def filter_genes(self, ctx, args):
         # ctx is the context object
