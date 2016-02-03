@@ -1,7 +1,7 @@
 #
 # Define basic display information
 #
-name     : View p-value distribution
+name     : View P-value Distribution for Differential Expression
 tooltip  : |
     View p-value distribution
 

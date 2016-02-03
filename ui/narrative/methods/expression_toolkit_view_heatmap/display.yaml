@@ -1,7 +1,7 @@
 #
 # Define basic display information
 #
-name     : View heatmap of expression levels
+name     : View Expression Heatmap
 tooltip  : |
     View heatmap of expression levels
 
