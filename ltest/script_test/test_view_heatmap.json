@@ -1,0 +1,11 @@
+{    
+    "version":"1.1",
+    "method":"CoExpression.view_heatmap",
+    "context": null,
+    "params":[     
+            {
+              "workspace_name": "coex_ftr_tst",
+              "in_obj_name": "E_coli_v4_Build_6_impute_1"
+            }
+    ]    
+}

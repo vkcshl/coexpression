@@ -53,6 +53,7 @@ def empty_cluster_results(err_msg, expr, workspace_service_url, param, logger, w
                                                                           'name' : (param['out_object_name'])}]})
 
 def clean_up_expr_matrix(fn, logger):
+    pass
     
 
 #END_HEADER
