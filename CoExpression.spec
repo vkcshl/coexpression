@@ -85,6 +85,7 @@ module CoExpression
   async funcdef const_coex_net_clust(ConstCoexNetClustParams args) returns (ConstCoexNetClustResult result);
 
   
+  async funcdef view_heatmap(FilterGenesParams args) returns (FilterGenesResult result);
 };
 
 

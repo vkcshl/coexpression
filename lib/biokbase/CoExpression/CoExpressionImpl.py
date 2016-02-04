@@ -615,3 +615,17 @@ class CoExpression:
                              'result is not type dict as required.')
         # return the results
         return [result]
+
+    def view_heatmap(self, ctx, args):
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN view_heatmap
+        result = {}
+        #END view_heatmap
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method view_heatmap return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
