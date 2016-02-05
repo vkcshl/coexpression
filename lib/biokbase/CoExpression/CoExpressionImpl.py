@@ -212,7 +212,7 @@ class CoExpression:
  
         ## Run coex_filter
         cmd_coex_filter = [self.COEX_FILTER, '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), '-o', "{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN),
-                           '-m', param['method'], '-s', "{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN),
+                           '-m', param['method'], '-n', '10', '-s', "{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN),
                            '-x', "{0}/{1}".format(self.RAWEXPR_DIR, self.GENELST_FN), '-t', 'y', '-j', self.PVFDT_FN]
         if 'num_features' in param:
           cmd_coex_filter.append("-n")

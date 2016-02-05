@@ -37,6 +37,10 @@ COPY ./ /kb/module
 RUN \
   . /kb/dev_container/user-env.sh && \
   cd /kb/module && \
+  make update-R 
+RUN \
+  . /kb/dev_container/user-env.sh && \
+  cd /kb/module && \
   make && make deploy
 #  rm -rf narrative_method_store \
 ENV PATH=$PATH:/kb/dev_container/modules/kb_sdk/bin

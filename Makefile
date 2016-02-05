@@ -61,7 +61,10 @@ else
 	-rsync -vrh $(KB_TOP)/../dev_container/modules/transform/lib/biokbase/* lib/biokbase/.
 endif
 
-
+update-R:
+	export TARGET=$(TARGET)
+	export R_LIBS=$(TARGET)/lib
+	R --vanilla --slave -e "library('WGCNA')" || (bash $(DIR)/deps/WGCNA/install-r-packages.sh)
 
 dk-build:
 	docker build -t kbase/coex:test .
@@ -71,10 +74,7 @@ dk-bash:
 
 deploy: deploy-scripts
 
-deploy-scripts: deploy-libs deploy-executable-script
-	export TARGET=$(TARGET)
-	export R_LIBS=$(TARGET)/lib
-	R --vanilla --slave -e "library('WGCNA')" || (bash $(DIR)/deps/WGCNA/install-r-packages.sh)
+deploy-scripts: deploy-libs deploy-executable-script update-R
 
 deploy-service: deploy-libs deploy-executable-script deploy-service-scripts deploy-cfg
 
