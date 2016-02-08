@@ -34,6 +34,27 @@ parameters :
             Select the Expression Matrix to be visualized
         long-hint  : |
             Choose an Expression Matrix from your Data Panel to use with this method. You can upload an Expression Matrix into your Narrative by clicking the <i>Add Data</i> button and selecting the <i>Import</i> tab. Please run the method Associate Expression Matrix to Genome Features before running this method. 
+    data_object:
+        ui-name : |
+            Output log2 fold change data  object
+        short-hint : |
+            Provide name for the output FloatDataTable object
+        long-hint  : |
+            Provide name for the output FloatDataTable object
+    figure_object :
+        ui-name : |
+            Output figure object name
+        short-hint : |
+            Provide name for the output FigureProperties object
+        long-hint  : |
+            Provide name for the output FigureProperties object
+    feature_set :
+        ui-name : |
+            Input FeatureSet object names
+        short-hint : |
+            Provide names for FeatureSet objects
+        long-hint  : |
+            Provide name for FeatureSet objects to filter expression matrix
 description : |
     <p>This method display heat map of expressed genes.</p>
      
