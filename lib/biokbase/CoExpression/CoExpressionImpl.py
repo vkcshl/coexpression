@@ -12,6 +12,7 @@ import subprocess
 from os import environ
 from ConfigParser import ConfigParser
 import re
+from collections import OrderedDict
 
 # 3rd party imports
 import requests
@@ -233,13 +234,14 @@ class CoExpression:
             self.logger.info(stderr)
  
         ## loading pvalue distribution FDT
-        pvfdt = {};
+        pvfdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
+        pvfdt = OrderedDict(pvfdt)
         with open(self.PVFDT_FN, 'r') as myfile:
            pvfdt = json.load(myfile)
+        pvfdt['id'] = param['out_data_object_name']
  
  
         fig_properties = {"xlabel" : "-log2(p-value)", "ylabel" : "Number of features", "xlog_mode" : "-log2", "ylog_mode" : "none", "title" : "Histogram of P-values", "plot_type" : "histogram"}
-        #"data_ref" : "4997/1/1"
         sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
                                                                               'data' : pvfdt,
                                                                               'name' : (param['out_data_object_name'])}]})
@@ -247,10 +249,9 @@ class CoExpression:
         data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
         fig_properties['data_ref'] = data_ref
 
-        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'CoExpression.FigureProperties',
                                                                               'data' : fig_properties,
                                                                               'name' : (param['out_figure_object_name'])}]})
- 
         result = fig_properties
         #END diff_p_distribution
 
