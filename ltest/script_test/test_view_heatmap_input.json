@@ -5,7 +5,11 @@
     "params":[     
             {
               "workspace_name": "coex_ftr_tst",
-              "object_name": "E_coli_v4_Build_6_impute_1"
+              "out_data_object_name": "p_300_expr_fdt",
+              "out_figure_object_name": "p_300_expr_fp",
+              "control_condition": "",
+              "feature_set": ["p_300_expr_c1","p_300_expr_c2"],
+              "object_name": "p_300_expr"
             }
     ]    
 }

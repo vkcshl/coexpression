@@ -693,7 +693,7 @@ class CoExpression:
           if df3.loc[fs,].shape[0] < 1: # empty
             continue
           cl[fsn] = fs
-          afs.append(fs)
+          afs.extend(fs)
 
           c1 = df3.loc[fs,].sum(axis=0)
           c1 = c1 / np.sqrt(c1.pow(2).sum())
@@ -749,13 +749,12 @@ class CoExpression:
  
         ## loading pvalue distribution FDT
         fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
-        fdt = OrderedDict(fdt)
-        fdt['data'] = final.T.as_matrix() # make sure Transpose
-        fdt['row_labels'] = final.columns
-        fdt['column_labels'] = final.index
+        #fdt = OrderedDict(fdt)
+        fdt['data'] = final.T.as_matrix().tolist() # make sure Transpose
+        fdt['row_labels'] = final.columns.tolist()
+        fdt['column_labels'] = final.index.tolist()
         # TODO: Add group label later
         fdt['id'] = param['out_data_object_name']
- 
  
         sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
                                                                               'data' : fdt,
