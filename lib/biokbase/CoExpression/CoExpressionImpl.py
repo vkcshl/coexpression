@@ -16,6 +16,8 @@ from collections import OrderedDict
 
 # 3rd party imports
 import requests
+import pandas as pd
+import numpy as np 
 
 # KBase imports
 import biokbase.workspace.client 
@@ -622,7 +624,150 @@ class CoExpression:
         # ctx is the context object
         # return variables are: result
         #BEGIN view_heatmap
+        try:
+            os.makedirs(self.RAWEXPR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FLTRD_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FINAL_DIR)
+        except:
+            pass
+ 
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
+        
         result = {}
+        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        token = ctx['token']
+ 
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+
+        param = args
+ 
+ 
+        from biokbase.workspace.client import Workspace
+        ws = Workspace(url=self.__WS_URL, token=token)
+        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+ 
+ 
+        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+                                          '--workspace_name', param['workspace_name'],
+                                          '--object_name', param['object_name'],
+                                          '--working_directory', self.RAWEXPR_DIR,
+                                          '--output_file_name', self.EXPRESS_FN
+                              ]
+ 
+        # need shell in this case because the java code is depending on finding the KBase token in the environment
+        #  -- copied from FVE_2_TSV
+        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+ 
+        self.logger.info("Normalize Expression Matrix with L2 norms")
+        df = pd.read_csv("{0}/{1}".format(self.RAWEXPR_DIR,self.EXPRESS_FN), sep='\t')
+        df2 = df[df.columns[1:]]
+        rn = df[df.columns[0]]
+        df2.index = rn
+        df3 = df2.div(df2.pow(2).sum(axis=1).pow(0.5), axis=0)
+        
+        
+        self.logger.info("Compute Centroids")
+
+        cl = {}
+        afs = [];
+        for fsn in param['feature_set']:
+          try: 
+            fs  = ws.get_objects([{'workspace': param['workspace_name'], 'name' : fsn}])[0]['data']['elements'].keys()
+          except:
+            continue # couldn't find feature_set
+          if df3.loc[fs,].shape[0] < 1: # empty
+            continue
+          cl[fsn] = fs
+          afs.append(fs)
+
+          c1 = df3.loc[fs,].sum(axis=0)
+          c1 = c1 / np.sqrt(c1.pow(2).sum())
+          if(len(cl.keys()) == 1):
+            centroids = c1.to_frame(fsn).T
+          else:
+            centroids.loc[fsn] = c1
+        
+        if len(cl.keys()) == 0:
+            raise Exception("No feature ids were mapped to dataset")
+        
+        # dataset centroid
+        dc = df3.loc[afs,].sum(axis=0)
+        dc = dc / np.sqrt(dc.pow(2).sum())
+    
+        
+        self.logger.info("Ordering Centroids and Data")
+        # the most far away cluster centroid from dataset centroid
+        fc = (centroids * dc).sum(axis=1).idxmin()
+        # the most far away centroid centroid from fc
+        ffc = (centroids * centroids.loc[fc,]).sum(axis=1).idxmin()
+        
+        # major direction to order on unit ball space
+        md = centroids.loc[ffc,] - centroids.loc[fc,]
+        
+        # unnormalized component of projection to the major direction (ignored md quantities because it is the same to all)
+        corder = (centroids * md).sum(axis=1).sort_values() # cluster order
+        coidx = corder.index
+        
+        dorder =(df3.loc[afs,] * md).sum(axis=1).sort_values() # data order
+        
+        # get first fs table    
+        fig_properties = {"xlabel" : "Conditions", "ylabel" : "Features", "xlog_mode" : "none", "ylog_mode" : "none", "title" : "Log Fold Changes", "plot_type" : "heatmap", 'ygroup': []}
+        fig_properties['ygtick_labels'] = coidx.tolist()
+
+        final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
+        fig_properties['ygroup'].append(final.shape[0])
+        
+        for i in range(1,len(coidx)):
+            tf = df2.loc[dorder.loc[cl[coidx[i]],].index,]
+            fig_properties['ygroup'].append(tf.shape[0])
+            final.append(tf)
+        
+        #final to log fold change
+        factor = 0.001
+        final = final + df2.abs().min().min() * factor
+        if param['control_condition']  in final.columns:
+            np.log(final.div(final.loc[:,final.columns[param['control_condition']]], axis=0))
+        else:
+            np.log(final.div(final.loc[:,final.columns[0]], axis=0))
+        
+
+ 
+        ## loading pvalue distribution FDT
+        fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
+        fdt = OrderedDict(fdt)
+        fdt['data'] = final.T.as_matrix() # make sure Transpose
+        fdt['row_labels'] = final.columns
+        fdt['column_labels'] = final.index
+        # TODO: Add group label later
+        fdt['id'] = param['out_data_object_name']
+ 
+ 
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+                                                                              'data' : fdt,
+                                                                              'name' : (param['out_data_object_name'])}]})
+
+        data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
+        fig_properties['data_ref'] = data_ref
+
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'CoExpression.FigureProperties',
+                                                                              'data' : fig_properties,
+                                                                              'name' : (param['out_figure_object_name'])}]})
+        result = fig_properties
         #END view_heatmap
 
         # At some point might do deeper type checking...

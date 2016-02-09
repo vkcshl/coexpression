@@ -1,9 +1,9 @@
 #
 # Define basic display information
 #
-name     : View Expression Heatmap
+name     : View Multi-cluster Heatmap
 tooltip  : |
-    View heatmap of expression levels
+    View multi-cluster heatmap of expression levels 
 
 screenshots :
     []
@@ -55,8 +55,15 @@ parameters :
             Provide names for FeatureSet objects
         long-hint  : |
             Provide name for FeatureSet objects to filter expression matrix
+    control_condition :
+        ui-name : |
+            Input control condition name (Optional)
+        short-hint : |
+            Provide the name for control condition
+        long-hint  : |
+            Provide the name for control condition. If not provided, it will use the first sample as a control condition.
 description : |
-    <p>This method display heat map of expressed genes.</p>
+    <p>This method display multi-cluster heatmap of expressed genes.</p>
      
     <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
 

@@ -28,8 +28,9 @@ coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple',
     datExpr = t(data)
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE)); options(stringsAsFactors=FALSE)
     allowWGCNAThreads()
-    powers = c(c(1:20),seq(from=1, to=20,by=2))
-    print(powers)
+    powers = c(1:maxpower)
+    #powers = c(c(1:20),seq(from=1, to=20,by=2))
+    #print(powers)
     sft = pickSoftThreshold(datExpr, powerVector = powers, networkType = "signed", verbose = 0)  
     sft_table = sft$fitIndices
     select_cond = sft_table$SFT.R.sq > minRsq & sft_table$median.k <= maxmediank

@@ -1,5 +1,5 @@
 {
-  "name" : "View Expression Heatmap",
+  "name" : "View Multi-cluster Heatmap",
   "ver" : "1.0.0",
   "authors" : [ ],
   "contact" : "help@kbase.us",
@@ -7,7 +7,7 @@
   "categories" : ["active"],
   "widgets" : {
     "input" : null,
-    "output" : "kbaseExpressionMatrixHeatmap"
+    "output" : "kbaseFigureObjectHeatmap"
   },
   "parameters" : [ {
       "id" : "expression",
@@ -28,6 +28,16 @@
       "field_type" : "text",
       "text_options" : {
         "valid_ws_types" : [ "KBaseCollections.FeatureSet" ]
+      }
+    }, {
+      "id" : "control_condition",
+      "optional" : true,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : [ ]
       }
     }, {
       "id" : "data_object",
@@ -67,12 +77,16 @@
           "target_property" : "out_data_object_name"
         },
         {
-          "input_parameter" : "data_object",
-          "target_property" : "out_data_object_name"
+          "input_parameter" : "feature_set",
+          "target_property" : "feature_set"
         },
         {
           "input_parameter" : "figure_object",
           "target_property" : "out_figure_object_name"
+        },
+        {
+          "input_parameter" : "control_condition",
+          "target_property" : "control_condition"
         },
         {
           "narrative_system_variable": "workspace",
