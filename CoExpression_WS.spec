@@ -5,7 +5,7 @@ module CoExpression
 
   /*
       Designed to support for p-value distribution plot to give idea on what would be good p-value cut off but it can be used for other purpose.
-      @optional xlabel ylabel xlog_mode ylog_mode title description plot_type properties xgroup ygroup xgtick_labels ygtick_labels
+      @optional xlabel ylabel xlog_mode ylog_mode title description plot_type properties xgroup ygroup xgtick_labels ygtick_labels original_data
   */
   typedef structure {
     string xlabel; /* labels for xaxis */
@@ -21,6 +21,7 @@ module CoExpression
     list<string> ygtick_labels; /* y axis each group name list */
     mapping<string, string> properties; /* additional properties */
     obj_ref data_ref; /* data object such as MAK.FloatDataTable */
+    obj_ref original_data; /* original data object */
   } FigureProperties;
 
 };

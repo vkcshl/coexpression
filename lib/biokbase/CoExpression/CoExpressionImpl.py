@@ -95,6 +95,7 @@ class CoExpression:
     COEX_CLUSTER = 'coex_cluster2'
     FLTRD_FN = 'filtered.tsv'
     CLSTR_FN = 'clusters.tsv'
+    CSTAT_FN = 'cluster_stat.tsv'
     FINAL_FN = 'filtered.json'
     PVFDT_FN = 'pv_distribution.json'
     GENELST_FN = 'selected.tsv'
@@ -550,7 +551,7 @@ class CoExpression:
         ## Run coex_cluster
         cmd_coex_cluster = [self.COEX_CLUSTER, '-t', 'y',
                            '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 
-                           '-o', "{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN)]
+                           '-o', "{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN), '-m', "{0}/{1}".format(self.CLSTR_DIR, self.CSTAT_FN) ]
  
         for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
            if p in param:
@@ -584,10 +585,16 @@ class CoExpression:
  
         # parse clustering results
         cid2genelist = {}
+        cid2stat = {}
+        with open("{0}/{1}".format(self.CLSTR_DIR, self.CSTAT_FN),'r') as glh:
+            glh.readline() # skip header
+            for line in glh:
+                cluster, mcor, msec = line.rstrip().replace('"','').split("\t")
+                cid2stat[cluster]= [mcor, msec]
         with open("{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN),'r') as glh:
             glh.readline() # skip header
             for line in glh:
-                gene, cluster = line.replace('"','').split("\t")
+                gene, cluster = line.rstrip().replace('"','').split("\t")
                 if cluster not in cid2genelist:
                     cid2genelist[cluster] = []
                 cid2genelist[cluster].append(gene)
@@ -600,8 +607,9 @@ class CoExpression:
         self.logger.info("Uploading the results onto WS")
         feature_clusters = []
         for cluster in cid2genelist:
-            feature_clusters.append( { "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
-                
+            feature_clusters.append( {"meancor": float(cid2stat[cluster][0]), "msec": float(cid2stat[cluster][0]), "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
+
+        pprint(feature_clusters)
  
         ## Upload Clusters
         feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
