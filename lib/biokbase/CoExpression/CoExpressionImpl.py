@@ -609,8 +609,6 @@ class CoExpression:
         for cluster in cid2genelist:
             feature_clusters.append( {"meancor": float(cid2stat[cluster][0]), "msec": float(cid2stat[cluster][0]), "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
 
-        pprint(feature_clusters)
- 
         ## Upload Clusters
         feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
                            "feature_clusters": feature_clusters}
@@ -746,12 +744,13 @@ class CoExpression:
             final.append(tf)
         
         #final to log fold change
-        factor = 0.001
-        final = final + df2.abs().min().min() * factor
+        factor = 0.5
+        final = final + df2[df2 !=0].abs().min().min() * factor
+        print df2.abs().min().min()
         if param['control_condition']  in final.columns:
-            np.log(final.div(final.loc[:,final.columns[param['control_condition']]], axis=0))
+            final = (final.div(final.loc[:,final.columns[param['control_condition']]], axis=0)).apply(np.log2)
         else:
-            np.log(final.div(final.loc[:,final.columns[0]], axis=0))
+            final = (final.div(final.loc[:,final.columns[0]], axis=0)).apply(np.log2)
         
 
  

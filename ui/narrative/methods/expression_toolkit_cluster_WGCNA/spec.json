@@ -24,7 +24,7 @@
       "optional" : true,
       "advanced" : true,
       "allow_multiple" : false,
-      "default_values" : [ "0.8" ],
+      "default_values" : [ "0.3" ],
       "field_type" : "text",
       "text_options" : {
         "validate_as": "float"
@@ -34,7 +34,7 @@
       "optional" : true,
       "advanced" : true,
       "allow_multiple" : false,
-      "default_values" : [ "50" ],
+      "default_values" : [ "400" ],
       "field_type" : "text",
       "text_options" : {
         "validate_as": "float"
