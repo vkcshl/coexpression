@@ -110,7 +110,7 @@ class CoExpression:
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
-        pprint(config)
+        #pprint(config)
         if 'ws_url' in config:
               self.__WS_URL = config['ws_url']
         if 'shock_url' in config:
@@ -839,6 +839,7 @@ class CoExpression:
         # TODO: Add group label later
         fdt['id'] = "{0}.fdt".format(param['out_figure_object_name'])
  
+        self.logger.info("Saving the results")
         sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
                                                                               'data' : fdt,
                                                                               'name' : "{0}.fdt".format(param['out_figure_object_name'])}]})
