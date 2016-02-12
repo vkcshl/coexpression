@@ -722,7 +722,7 @@ class CoExpression:
             #raise Exception("Mean correlation is not included in FeatureCluster object") # now it is NaN
 
           if 'quantile' in param:
-              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(param['quantile'])
+              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(float(param['quantile']))
           else:
               c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(0.75)
          
