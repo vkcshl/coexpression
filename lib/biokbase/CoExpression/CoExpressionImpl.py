@@ -819,7 +819,7 @@ class CoExpression:
             for i in range(1,len(coidx)):
                 tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
                 fig_properties['ygroup'].append(tf.shape[0])
-                final.append(tf)
+                final = final.append(tf)
         else:
             final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
             fig_properties['ygroup'].append(final.shape[0])
@@ -827,8 +827,10 @@ class CoExpression:
             for i in range(1,len(coidx)):
                 tf = df2.loc[dorder.loc[cl[coidx[i]],].index,]
                 fig_properties['ygroup'].append(tf.shape[0])
-                final.append(tf)
+                final = final.append(tf)
         
+        pprint(final)
+        print final.shape
  
         ## loading pvalue distribution FDT
         fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
