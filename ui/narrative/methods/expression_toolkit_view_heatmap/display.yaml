@@ -27,20 +27,20 @@ suggestions :
 # Configure the display and description of the parameters
 #
 parameters :
-    expression :
+    cluster_object :
         ui-name : |
-            Expression Matrix
+            FeatureCluster
         short-hint : |
-            Select the Expression Matrix to be visualized
+            Select the cluster output to be visualized
         long-hint  : |
-            Choose an Expression Matrix from your Data Panel to use with this method. You can upload an Expression Matrix into your Narrative by clicking the <i>Add Data</i> button and selecting the <i>Import</i> tab. Please run the method Associate Expression Matrix to Genome Features before running this method. 
-    data_object:
+            Choose a cluster output from your Data Panel to use with this method.
+    quantile:
         ui-name : |
-            Output log2 fold change data  object
+            Quantile Level
         short-hint : |
-            Provide name for the output FloatDataTable object
+            Santdard deviation quantile of log2 fold change given a cluster
         long-hint  : |
-            Provide name for the output FloatDataTable object
+            1.0 means largest std. of log2 fold change and 0.5 mean median lo2 fold change std. given a cluster
     figure_object :
         ui-name : |
             Output figure object name
@@ -48,13 +48,20 @@ parameters :
             Provide name for the output FigureProperties object
         long-hint  : |
             Provide name for the output FigureProperties object
-    feature_set :
+    quantile_weight :
         ui-name : |
-            Input FeatureSet object names
+            Quantile Weight
         short-hint : |
-            Provide names for FeatureSet objects
+            Provide a relative weight for normalied quantile std. over normalized mean correlation of a cluster
         long-hint  : |
-            Provide name for FeatureSet objects to filter expression matrix
+            1.0 means we treat normalized mean correlation to be equal weight to normalized quantile std. and 0.0 means we only consider normalized mean correlation for cluster selection criteria. Please refer to description for more details on normalization.
+    min_features :
+        ui-name : |
+            Minimum Number of Features 
+        short-hint : |
+            Provide the minimum number of features to visualize
+        long-hint  : |
+            Provide the minimum number of features to visualize and this method will return features as close as possible to this minimum number of features.
     control_condition :
         ui-name : |
             Input control condition name (Optional)

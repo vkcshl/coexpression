@@ -4,12 +4,14 @@
     "context": null,
     "params":[     
             {
-              "workspace_name": "coex_ftr_tst",
-              "out_data_object_name": "p_300_expr_fdt",
-              "out_figure_object_name": "p_300_expr_fp",
+              "workspace_name": "sunita:1454940276246",
+              "out_data_object_name": "ath_expr_fdt",
+              "out_figure_object_name": "ath_expr_fp",
               "control_condition": "",
-              "feature_set": ["p_300_expr_c1","p_300_expr_c2"],
-              "object_name": "p_300_expr"
+              "quantile": 0.75,
+              "quantile_weight": 1.0,
+              "min_features": 200,
+              "object_name": "ath_cuffdiff_expmat_filtered_wgcna"
             }
     ]    
 }

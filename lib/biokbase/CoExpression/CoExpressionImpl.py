@@ -647,7 +647,7 @@ class CoExpression:
             self.logger = script_utils.stderrlogger(__file__)
         
         result = {}
-        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        self.logger.info("Loading data")
         token = ctx['token']
  
         eenv = os.environ.copy()
@@ -658,48 +658,80 @@ class CoExpression:
  
         from biokbase.workspace.client import Workspace
         ws = Workspace(url=self.__WS_URL, token=token)
-        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
- 
- 
-        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
-                                          '--workspace_name', param['workspace_name'],
-                                          '--object_name', param['object_name'],
-                                          '--working_directory', self.RAWEXPR_DIR,
-                                          '--output_file_name', self.EXPRESS_FN
-                              ]
- 
-        # need shell in this case because the java code is depending on finding the KBase token in the environment
-        #  -- copied from FVE_2_TSV
-        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
-        stdout, stderr = tool_process.communicate()
-        
-        if stdout is not None and len(stdout) > 0:
-            self.logger.info(stdout)
- 
-        if stderr is not None and len(stderr) > 0:
-            self.logger.info(stderr)
- 
-        self.logger.info("Normalize Expression Matrix with L2 norms")
-        df = pd.read_csv("{0}/{1}".format(self.RAWEXPR_DIR,self.EXPRESS_FN), sep='\t')
-        df2 = df[df.columns[1:]]
-        rn = df[df.columns[0]]
-        df2.index = rn
+        fc = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+        if 'original_data' not in fc:
+            raise Exception("FeatureCluster object does not have information for the original ExpressionMatrix")
+        oexpr = ws.get_objects([{ 'ref' : fc['original_data']}])[0]
+
+        df2 = pd.DataFrame(oexpr['data']['data']['values'], index=oexpr['data']['data']['row_ids'], columns=oexpr['data']['data']['col_ids'])
+#        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+#                                          '--workspace_name', oexpr['info'][7],
+#                                          '--object_name', oexpr['info'][1],
+#                                          '--working_directory', self.RAWEXPR_DIR,
+#                                          '--output_file_name', self.EXPRESS_FN
+#                              ]
+# 
+#        # need shell in this case because the java code is depending on finding the KBase token in the environment
+#        #  -- copied from FVE_2_TSV
+#        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+#        stdout, stderr = tool_process.communicate()
+#        
+#        if stdout is not None and len(stdout) > 0:
+#            self.logger.info(stdout)
+# 
+#        if stderr is not None and len(stderr) > 0:
+#            self.logger.info(stderr)
+# 
+#        df = pd.read_csv("{0}/{1}".format(self.RAWEXPR_DIR,self.EXPRESS_FN), sep='\t')
+#        df2 = df[df.columns[1:]]
+#        rn = df[df.columns[0]]
+#        df2.index = rn
+
+        # L2 normalization
         df3 = df2.div(df2.pow(2).sum(axis=1).pow(0.5), axis=0)
         
+        factor = 0.125
+        fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
+        if param['control_condition']  in fc_df.columns:
+            fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
+        else:
+            fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
         
-        self.logger.info("Compute Centroids")
+        self.logger.info("Compute cluster statistics")
 
         cl = {}
         afs = [];
-        for fsn in param['feature_set']:
+        cid = 1;
+
+        c_stat = pd.DataFrame()
+        for cluster in fc['feature_clusters']:
+         
           try: 
-            fs  = ws.get_objects([{'workspace': param['workspace_name'], 'name' : fsn}])[0]['data']['elements'].keys()
+            fs  = cluster['id_to_pos'].keys()
           except:
             continue # couldn't find feature_set
+
+          fsn = "Cluster_{0}".format(cid)
+          cid +=1
+          c_stat.loc[fsn,'size'] = len(fs)
+          if 'meancor' in cluster:
+              c_stat.loc[fsn,'mcor'] = cluster['meancor']
+          else:
+            pass
+            # TODO: Add mean cor calculation later
+            #raise Exception("Mean correlation is not included in FeatureCluster object") # now it is NaN
+
+          if 'quantile' in param:
+              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(param['quantile'])
+          else:
+              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(0.75)
+         
+
+          c1 = df3.loc[fs,].sum(axis=0)
           if df3.loc[fs,].shape[0] < 1: # empty
             continue
           cl[fsn] = fs
-          afs.extend(fs)
+          #afs.extend(fs)
 
           c1 = df3.loc[fs,].sum(axis=0)
           c1 = c1 / np.sqrt(c1.pow(2).sum())
@@ -707,9 +739,53 @@ class CoExpression:
             centroids = c1.to_frame(fsn).T
           else:
             centroids.loc[fsn] = c1
+
+        # now we have centroids and statistics
+        # let's subselect clusters
+        min_features = 200
+        if 'min_features' in param :
+          min_features = param['min_features']
+        
+
+        pprint(c_stat)
+
+        c_stat.loc[:,'nmcor'] = c_stat.loc[:,'mcor'] / c_stat.loc[:,'mcor'].max()
+        c_stat.loc[:,'nstdstat'] = c_stat.loc[:,'stdstat'] / c_stat.loc[:,'stdstat'].max()
+        
+        if 'use_norm_weight' in param and param['use_norm_weight'] != 0:
+            if 'quantile_weight' in param:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'nmcor'] + float(param['quantile_weight']) * c_stat.loc[:,'nstdstat']
+            else:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'nmcor'] + 1.0                             * c_stat.loc[:,'nstdstat']
+        else:
+            if 'quantile_weight' in param:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + float(param['quantile_weight']) * c_stat.loc[:,'stdstat']
+            else:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + 0.1                             * c_stat.loc[:,'stdstat']
+
+        c_stat.sort('weight', inplace=True, ascending=False)
+
+
+        pprint(c_stat)
+
+        for i in range(c_stat.shape[0]):
+            fsn = c_stat.index[i]
+            fs = cl[fsn]
+            if len(afs) + len(fs) > min_features:
+                break;
+           
+            afs.extend(fs)
+
+            c1 = df3.loc[fs,].sum(axis=0)
+            c1 = c1 / np.sqrt(c1.pow(2).sum())
+            if(len(cl.keys()) == 1):
+              centroids = c1.to_frame(fsn).T
+            else:
+              centroids.loc[fsn] = c1
+           
         
         if len(cl.keys()) == 0:
-            raise Exception("No feature ids were mapped to dataset")
+            raise Exception("No feature ids were mapped to dataset or no clusters were selected")
         
         # dataset centroid
         dc = df3.loc[afs,].sum(axis=0)
@@ -735,24 +811,14 @@ class CoExpression:
         fig_properties = {"xlabel" : "Conditions", "ylabel" : "Features", "xlog_mode" : "none", "ylog_mode" : "none", "title" : "Log Fold Changes", "plot_type" : "heatmap", 'ygroup': []}
         fig_properties['ygtick_labels'] = coidx.tolist()
 
-        final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
+        final=fc_df.loc[dorder.loc[cl[coidx[0]],].index,]
         fig_properties['ygroup'].append(final.shape[0])
         
         for i in range(1,len(coidx)):
-            tf = df2.loc[dorder.loc[cl[coidx[i]],].index,]
+            tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
             fig_properties['ygroup'].append(tf.shape[0])
             final.append(tf)
         
-        #final to log fold change
-        factor = 0.5
-        final = final + df2[df2 !=0].abs().min().min() * factor
-        print df2.abs().min().min()
-        if param['control_condition']  in final.columns:
-            final = (final.div(final.loc[:,final.columns[param['control_condition']]], axis=0)).apply(np.log2)
-        else:
-            final = (final.div(final.loc[:,final.columns[0]], axis=0)).apply(np.log2)
-        
-
  
         ## loading pvalue distribution FDT
         fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
@@ -765,7 +831,7 @@ class CoExpression:
  
         sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
                                                                               'data' : fdt,
-                                                                              'name' : (param['out_data_object_name'])}]})
+                                                                              'name' : "{0}.fdt".format(param['out_figure_object_name'])}]})
 
         data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
         fig_properties['data_ref'] = data_ref
