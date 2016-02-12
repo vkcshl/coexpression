@@ -829,9 +829,6 @@ class CoExpression:
                 fig_properties['ygroup'].append(tf.shape[0])
                 final = final.append(tf)
         
-        pprint(final)
-        print final.shape
- 
         ## loading pvalue distribution FDT
         fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
         #fdt = OrderedDict(fdt)
