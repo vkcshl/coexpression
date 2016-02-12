@@ -733,12 +733,12 @@ class CoExpression:
           cl[fsn] = fs
           #afs.extend(fs)
 
-          c1 = df3.loc[fs,].sum(axis=0)
-          c1 = c1 / np.sqrt(c1.pow(2).sum())
-          if(len(cl.keys()) == 1):
-            centroids = c1.to_frame(fsn).T
-          else:
-            centroids.loc[fsn] = c1
+          #c1 = df3.loc[fs,].sum(axis=0)
+          #c1 = c1 / np.sqrt(c1.pow(2).sum())
+          #if(len(cl.keys()) == 1):
+          #  centroids = c1.to_frame(fsn).T
+          #else:
+          #  centroids.loc[fsn] = c1
 
         # now we have centroids and statistics
         # let's subselect clusters
@@ -747,7 +747,6 @@ class CoExpression:
           min_features = param['min_features']
         
 
-        pprint(c_stat)
 
         c_stat.loc[:,'nmcor'] = c_stat.loc[:,'mcor'] / c_stat.loc[:,'mcor'].max()
         c_stat.loc[:,'nstdstat'] = c_stat.loc[:,'stdstat'] / c_stat.loc[:,'stdstat'].max()
@@ -763,11 +762,12 @@ class CoExpression:
             else:
                 c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + 0.1                             * c_stat.loc[:,'stdstat']
 
-        c_stat.sort('weight', inplace=True, ascending=False)
+        c_stat.sort_values('weight', inplace=True, ascending=False)
 
 
         pprint(c_stat)
 
+        centroids = pd.DataFrame()
         for i in range(c_stat.shape[0]):
             fsn = c_stat.index[i]
             fs = cl[fsn]
@@ -778,11 +778,12 @@ class CoExpression:
 
             c1 = df3.loc[fs,].sum(axis=0)
             c1 = c1 / np.sqrt(c1.pow(2).sum())
-            if(len(cl.keys()) == 1):
+            if(centroids.shape[0] < 1):
               centroids = c1.to_frame(fsn).T
             else:
               centroids.loc[fsn] = c1
            
+        pprint(centroids)
         
         if len(cl.keys()) == 0:
             raise Exception("No feature ids were mapped to dataset or no clusters were selected")
