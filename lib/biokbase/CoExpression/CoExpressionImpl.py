@@ -812,13 +812,22 @@ class CoExpression:
         fig_properties = {"xlabel" : "Conditions", "ylabel" : "Features", "xlog_mode" : "none", "ylog_mode" : "none", "title" : "Log Fold Changes", "plot_type" : "heatmap", 'ygroup': []}
         fig_properties['ygtick_labels'] = coidx.tolist()
 
-        final=fc_df.loc[dorder.loc[cl[coidx[0]],].index,]
-        fig_properties['ygroup'].append(final.shape[0])
-        
-        for i in range(1,len(coidx)):
-            tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
-            fig_properties['ygroup'].append(tf.shape[0])
-            final.append(tf)
+        if 'fold_change' in param and param['fold_change'] == 1:
+            final=fc_df.loc[dorder.loc[cl[coidx[0]],].index,]
+            fig_properties['ygroup'].append(final.shape[0])
+            
+            for i in range(1,len(coidx)):
+                tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
+                fig_properties['ygroup'].append(tf.shape[0])
+                final.append(tf)
+        else:
+            final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
+            fig_properties['ygroup'].append(final.shape[0])
+            
+            for i in range(1,len(coidx)):
+                tf = df2.loc[dorder.loc[cl[coidx[i]],].index,]
+                fig_properties['ygroup'].append(tf.shape[0])
+                final.append(tf)
         
  
         ## loading pvalue distribution FDT

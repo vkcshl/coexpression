@@ -20,6 +20,17 @@
         "valid_ws_types" : [ "KBaseFeatureValues.FeatureClusters" ]
       }
     }, {
+      "id": "fold_change",
+      "optional":true,
+      "advanced":false,
+      "allow_multiple":false,
+      "default_values":[1],
+      "field_type" : "checkbox",
+      "checkbox_options":{
+        "checked_value": 1,
+        "unchecked_value": 0
+      }
+    }, {
       "id" : "quantile",
       "optional" : true,
       "advanced" : true,
@@ -105,6 +116,10 @@
         {
           "input_parameter" : "control_condition",
           "target_property" : "control_condition"
+        },
+        {
+          "input_parameter" : "fold_change",
+          "target_property" : "fold_change"
         },
         {
           "narrative_system_variable": "workspace",

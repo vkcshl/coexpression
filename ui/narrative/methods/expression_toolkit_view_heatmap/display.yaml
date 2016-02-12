@@ -69,6 +69,13 @@ parameters :
             Provide the name for control condition
         long-hint  : |
             Provide the name for control condition. If not provided, it will use the first sample as a control condition.
+    fold_change :
+        ui-name : |
+            Fold Change Plot
+        short-hint : |
+            Select if you want fold change plot
+        long-hint  : |
+            Select if you want fold change plot. Otherwise, it will show original expression level plot
 description : |
     <p>This method display multi-cluster heatmap of expressed genes.</p>
      
