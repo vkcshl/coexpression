@@ -837,7 +837,7 @@ class CoExpression:
         fdt['row_labels'] = final.columns.tolist()
         fdt['column_labels'] = final.index.tolist()
         # TODO: Add group label later
-        fdt['id'] = param['out_data_object_name']
+        fdt['id'] = "{0}.fdt".format(param['out_figure_object_name'])
  
         sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
                                                                               'data' : fdt,
