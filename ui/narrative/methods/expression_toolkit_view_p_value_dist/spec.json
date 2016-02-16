@@ -43,16 +43,6 @@
         ]
       }
     }, {
-      "id" : "data_object",
-      "optional" : false,
-      "advanced" : false,
-      "allow_multiple" : false,
-      "default_values" : [ "" ],
-      "field_type" : "text",
-      "text_options" : {
-        "valid_ws_types" : [ ]
-      }
-    }, {
       "id" : "figure_object",
       "optional" : false,
       "advanced" : false,
@@ -73,10 +63,6 @@
         {
           "input_parameter" : "expression",
           "target_property" : "object_name"
-        },
-        {
-          "input_parameter" : "data_object",
-          "target_property" : "out_data_object_name"
         },
         {
           "input_parameter" : "figure_object",
