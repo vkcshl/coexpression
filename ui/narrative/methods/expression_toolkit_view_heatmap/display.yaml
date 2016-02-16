@@ -76,6 +76,13 @@ parameters :
             Select if you want fold change plot
         long-hint  : |
             Select if you want fold change plot. Otherwise, it will show original expression level plot
+    fold_change_range :
+        ui-name : |
+            Fold Change Range
+        short-hint : |
+            Provide fold change range
+        long-hint  : |
+            2.0 means the fold change will be ranged from -2 to 2. 1.0 means the fold change will be ranged from -1 to 1.0
 description : |
     <p>This method display multi-cluster heatmap of expressed genes.</p>
      
