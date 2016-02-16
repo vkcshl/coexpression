@@ -813,6 +813,9 @@ class CoExpression:
         fig_properties['ygtick_labels'] = coidx.tolist()
 
         if 'fold_change' in param and param['fold_change'] == 1:
+            frange = 2
+            if 'fold_change_range' in param:
+                frange = float(param['fold_change_range'])
             final=fc_df.loc[dorder.loc[cl[coidx[0]],].index,]
             fig_properties['ygroup'].append(final.shape[0])
             
@@ -820,6 +823,8 @@ class CoExpression:
                 tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
                 fig_properties['ygroup'].append(tf.shape[0])
                 final = final.append(tf)
+            fc_df0b = final.sub(final.min(axis=1), axis=0)
+            final = (fc_df0b.div(fc_df0b.max(axis=1), axis=0) - 0.5) * 2 * frange
         else:
             final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
             fig_properties['ygroup'].append(final.shape[0])
