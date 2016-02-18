@@ -693,6 +693,7 @@ class CoExpression:
 
         # type - ? level, ratio, log-ratio  <---> "untransformed"
         # scale - ? probably: raw, ln, log2, log10
+        self.logger.info("Expression matrix type: {0}, scale: {1}".format(oexpr['data']['type'],oexpr['data']['scale'] ))
         if oexpr['data']['type'] == 'level' or oexpr['data']['type'] == 'untransformed': # need to compute fold changes
             if 'scale' not in oexpr['data'] or oexpr['data']['scale'] == 'raw' or oexpr['data']['scale'] == "1.0":
               factor = 0.125

@@ -71,20 +71,20 @@ class TestCoExpressionMethods(TestCoExpressionMethodsSetup):
 #                output =json.load(o)
 #        pprint(output)
 #
- def test_coex_cluster(self):
-        print("\n\n----------- test constcoex_net_clust ----------")
-
-        out =call(["run_CoExpression.sh",
-        "ltest/script_test/test_coex_clust_input.json",
-        "ltest/script_test/test_coex_clust_output.json",
-        "ltest/script_test/token.txt"])
-
-        # print error code of Implementation
-        print(out);
-
-        with open('ltest/script_test/test_coex_clust_output.json') as o:
-                output =json.load(o)
-        pprint(output)
+# def test_coex_cluster(self):
+#        print("\n\n----------- test constcoex_net_clust ----------")
+#
+#        out =call(["run_CoExpression.sh",
+#        "ltest/script_test/test_coex_clust_input.json",
+#        "ltest/script_test/test_coex_clust_output.json",
+#        "ltest/script_test/token.txt"])
+#
+#        # print error code of Implementation
+#        print(out);
+#
+#        with open('ltest/script_test/test_coex_clust_output.json') as o:
+#                output =json.load(o)
+#        pprint(output)
 
 
 #start the tests if run as a script
