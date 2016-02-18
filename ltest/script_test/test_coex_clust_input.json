@@ -4,14 +4,14 @@
     "context": null,
     "params":[     
             {
-              "workspace_name": "sunita:1454940276246",
-              "object_name": "ath_cuffdiff_expmat_filtered",
+              "workspace_name": "plane83:1455659812761",
+              "object_name": "GSE71046_maizeRNAseq_top1500",
               "net_method": "WGCNA",
               "clust_method": "WGCNA",
               "minRsq" : "0.01",
               "maxpower" : "500",
               "minModuleSize" : "1",
-              "out_object_name": "ath_cuffdiff_expmat_filtered_wgcna"
+              "out_object_name": "GSE71046_maizeRNAseq_top1500_wgcna"
             }
     ]    
 }

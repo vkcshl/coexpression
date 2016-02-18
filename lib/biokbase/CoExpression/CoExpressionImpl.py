@@ -690,14 +690,61 @@ class CoExpression:
 
         # L2 normalization
         df3 = df2.div(df2.pow(2).sum(axis=1).pow(0.5), axis=0)
-        
-        factor = 0.125
-        fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
-        if param['control_condition']  in fc_df.columns:
-            fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
-        else:
-            fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
-        
+
+        # type - ? level, ratio, log-ratio  <---> "untransformed"
+        # scale - ? probably: raw, ln, log2, log10
+        if oexpr['data']['type'] == 'level' or oexpr['data']['type'] == 'untransformed': # need to compute fold changes
+            if 'scale' not in oexpr['data'] or oexpr['data']['scale'] == 'raw' or oexpr['data']['scale'] == "1.0":
+              factor = 0.125
+              fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
+            else:
+              fc_df = df2
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0))
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0))
+              if oexpr['data']['scale'] == "log10":
+                  fc_df = fc_df/np.log10(2)
+              elif oexpr['data']['scale'] == "ln":
+                  fc_df = fc_df/np.log(2)
+              else:
+                  pass
+        elif oexpr['data']['type'] == 'ratio':
+            fc_cf = df2.apply(np.log2)
+        elif oexpr['data']['type'] == 'log-ratio':
+            fc_cf = df2
+            if oexpr['data']['scale'] == "log10":
+                fc_df = fc_df/np.log10(2)
+            elif oexpr['data']['scale'] == "ln":
+                fc_df = fc_df/np.log(2)
+            else:
+                pass
+
+        else: # do the same thing with simple level or untransformed
+            if 'scale' not in oexpr['data'] or oexpr['data']['scale'] == 'raw' or oexpr['data']['scale'] == "1.0":
+              factor = 0.125
+              fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
+            else:
+              fc_df = df2
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0))
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0))
+              if oexpr['data']['scale'] == "log10":
+                  fc_df = fc_df/np.log10(2)
+              elif oexpr['data']['scale'] == "ln":
+                  fc_df = fc_df/np.log(2)
+              else:
+                  pass
+       
         self.logger.info("Compute cluster statistics")
 
         cl = {}
@@ -747,8 +794,6 @@ class CoExpression:
         if 'min_features' in param :
           min_features = param['min_features']
         
-
-
         c_stat.loc[:,'nmcor'] = c_stat.loc[:,'mcor'] / c_stat.loc[:,'mcor'].max()
         c_stat.loc[:,'nstdstat'] = c_stat.loc[:,'stdstat'] / c_stat.loc[:,'stdstat'].max()
         
@@ -764,7 +809,6 @@ class CoExpression:
                 c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + 0.1                             * c_stat.loc[:,'stdstat']
 
         c_stat.sort_values('weight', inplace=True, ascending=False)
-
 
         pprint(c_stat)
 
@@ -824,8 +868,13 @@ class CoExpression:
                 tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
                 fig_properties['ygroup'].append(tf.shape[0])
                 final = final.append(tf)
-            fc_df0b = final.sub(final.min(axis=1), axis=0)
-            final = (fc_df0b.div(fc_df0b.max(axis=1), axis=0) - 0.5) * 2 * frange
+
+            if 'fold_cutoff' in param and param['fold_cutoff'] == 1:
+                final[final > frange] = frange
+                final[final < - frange] = - frange
+            else:
+                fc_df0b = final.sub(final.min(axis=1), axis=0)
+                final = (fc_df0b.div(fc_df0b.max(axis=1), axis=0) - 0.5) * 2 * frange
         else:
             final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
             fig_properties['ygroup'].append(final.shape[0])

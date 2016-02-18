@@ -150,6 +150,8 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
     TOM = TOMsimilarity(adjmat, verbose = 0)
     dissTOM = 1 - TOM
     geneTree = flashClust(as.dist(dissTOM), method = "average")
+    # rare case exception handling
+    geneTree$height = round(geneTree$height,6)
     dynamicMods = cutreeDynamic(dendro = geneTree, cutHeight = detectCutHeight, deepSplit = TRUE, minClusterSize = minModuleSize, method = 'tree')
     modulenames = labels2colors(dynamicMods)
     #par(pty="m");plotDendroAndColors(geneTree, dynamicColors,rowText=dynamicColors, dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = "Gene dendrogram and module colors")

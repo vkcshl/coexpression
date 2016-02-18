@@ -12,6 +12,8 @@
               "quantile_weight": 1.0,
               "min_features": 200,
               "fold_change": 1, 
+              "fold_change_range": 3, 
+              "fold_cutoff": 1, 
               "object_name": "ath_cuffdiff_expmat_filtered_wgcna"
             }
     ]    

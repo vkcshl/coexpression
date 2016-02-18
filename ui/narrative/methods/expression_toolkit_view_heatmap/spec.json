@@ -21,8 +21,19 @@
       }
     }, {
       "id": "fold_change",
-      "optional":true,
+      "optional":false,
       "advanced":false,
+      "allow_multiple":false,
+      "default_values":[1],
+      "field_type" : "checkbox",
+      "checkbox_options":{
+        "checked_value": 1,
+        "unchecked_value": 0
+      }
+    }, {
+      "id": "fold_cutoff",
+      "optional":false,
+      "advanced":true,
       "allow_multiple":false,
       "default_values":[1],
       "field_type" : "checkbox",
@@ -130,6 +141,10 @@
         {
           "input_parameter" : "fold_change",
           "target_property" : "fold_change"
+        },
+        {
+          "input_parameter" : "fold_cutoff",
+          "target_property" : "fold_cutoff"
         },
         {
           "narrative_system_variable": "workspace",

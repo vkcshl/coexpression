@@ -76,6 +76,13 @@ parameters :
             Select if you want fold change plot
         long-hint  : |
             Select if you want fold change plot. Otherwise, it will show original expression level plot
+    fold_cutoff :
+        ui-name : |
+            Fold Cutoff
+        short-hint : |
+            Select if you want fold change to be cutoff within fold_change_range
+        long-hint  : |
+            Select if you want fold change to be cutoff within fold_change_range. For instance, log2 fold change ratios are  4.0 and 8.0 and the fold change range is 2, then both of them will be forced to be 2.0. If not selected, then each feature will be normalized within fold_change_range.  For instance, log2 fold change ratios are 4.0 and 8.0 and 8.0 is the maximum value among the conditions of the feature, then it will force 1.0 and 2.0 for fold change range 2.0.
     fold_change_range :
         ui-name : |
             Fold Change Range
