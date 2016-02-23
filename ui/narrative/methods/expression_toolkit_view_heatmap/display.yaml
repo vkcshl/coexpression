@@ -3,7 +3,7 @@
 #
 name     : View Multi-cluster Heatmap
 tooltip  : |
-    View multi-cluster heatmap of gene expression levels 
+    Explore an expression matrix as a multi-cluster heatmap of gene expression levels. 
 
 screenshots :
     []
