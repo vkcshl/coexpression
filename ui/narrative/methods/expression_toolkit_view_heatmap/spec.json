@@ -30,18 +30,28 @@
         "checked_value": 1,
         "unchecked_value": 0
       }
-    }, {
-      "id": "fold_cutoff",
-      "optional":false,
-      "advanced":true,
-      "allow_multiple":false,
-      "default_values":[1],
-      "field_type" : "checkbox",
-      "checkbox_options":{
-        "checked_value": 1,
-        "unchecked_value": 0
+    }, 
+    {
+      "id" : "fold_cutoff",
+      "optional" : false,
+      "advanced" : true,
+      "allow_multiple" : false,
+      "default_values" : [ 1 ],
+      "field_type" : "dropdown",
+      "dropdown_options":{
+          "options": [
+              {
+                  "value": 1,
+                  "display": "Cutoff"
+              },
+              {
+                  "value": 0,
+                  "display": "Renormalized per feature"
+              }
+          ]
       }
-    }, {
+    },
+    {
       "id": "fold_change_range",
       "optional":true,
       "advanced":true,
