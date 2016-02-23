@@ -4,7 +4,7 @@
 name     : Cluster Expression Data - WGCNA
 
 tooltip  : |
-    Perform WGCNA clustering to group gene expression data.
+    Perform weighted gene co-expression network analysis (WGCNA) to cluster gene expression data
 
 screenshots :
     []
