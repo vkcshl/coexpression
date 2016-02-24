@@ -3,7 +3,7 @@
 #
 name     : Filter Expression Matrix
 tooltip  : |
-    Filter an expression matrix based on Log-Odd-Ratio (LOR) or ANalysis of VAriance (ANOVA) algorithm
+    Filter an expression matrix using either Log Odds Ratio (LOR) or ANalysis of VAriance (ANOVA) algorithms.
 
 screenshots :
     []
