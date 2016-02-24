@@ -3,7 +3,7 @@
 #
 name     : View P-value Distribution for Differential Expression
 tooltip  : |
-    View p-value distribution
+    View and explore the P-value distribution to help user filter the expression matrix based on P-value cutoff and number of features.
 
 screenshots :
     []
