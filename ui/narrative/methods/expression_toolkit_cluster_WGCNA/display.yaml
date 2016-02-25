@@ -4,7 +4,7 @@
 name     : Cluster Expression Data - WGCNA
 
 tooltip  : |
-    Perform weighted gene co-expression network analysis (WGCNA) to cluster gene expression data
+    Perform weighted gene co-expression network analysis (WGCNA) to detect gene clusters and expression patterns.
 
 screenshots :
     []
@@ -84,7 +84,6 @@ description : |
 
 
     <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
-    Paramvir Dehal, Roman Sutormin, Michael Sneddon, Srividya Ramakrishnan, Pavel Novichkov, Keith Keller.</p>
-    <p>Shinjae Yoo and Fei He added this additional method into this expression toolkit</p>
-    <p>Oct 21, 2015</p>
+    Shinjae Yoo, Fei He, Sunita Kumari, Priya Ranjan, Srividya Ramakrishnan, Jim Thomason, Vivek Kumar</p>
+
     <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
