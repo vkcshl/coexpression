@@ -817,7 +817,7 @@ class CoExpression:
         for i in range(c_stat.shape[0]):
             fsn = c_stat.index[i]
             fs = cl[fsn]
-            if len(afs) + len(fs) > min_features:
+            if i != 0 and len(afs) + len(fs) > min_features :
                 break;
            
             afs.extend(fs)

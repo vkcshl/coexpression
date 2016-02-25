@@ -4,17 +4,17 @@
     "context": null,
     "params":[     
             {
-              "workspace_name": "sunita:1454940276246",
-              "out_data_object_name": "ath_expr_fdt",
-              "out_figure_object_name": "ath_expr_fp",
+              "workspace_name": "plane83:1455229256474",
+              "out_figure_object_name": "WGCNA_output_Feb16_2_hm",
               "control_condition": "",
               "quantile": 0.75,
               "quantile_weight": 1.0,
               "min_features": 200,
+              "use_norm_weight": 1, 
               "fold_change": 1, 
               "fold_change_range": 3, 
               "fold_cutoff": 1, 
-              "object_name": "ath_cuffdiff_expmat_filtered_wgcna"
+              "object_name": "WGCNA_output_Feb16_2"
             }
     ]    
 }
