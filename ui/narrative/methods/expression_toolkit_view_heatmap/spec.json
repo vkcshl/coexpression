@@ -46,7 +46,7 @@
               },
               {
                   "value": 0,
-                  "display": "Renormalized per feature"
+                  "display": "Rescale"
               }
           ]
       }
