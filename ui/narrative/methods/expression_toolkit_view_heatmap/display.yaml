@@ -29,25 +29,36 @@ suggestions :
 parameters :
     cluster_object :
         ui-name : |
-            FeatureCluster
+            Feature Clusters
         short-hint : |
-            Select the cluster output to be visualized
-        long-hint  : |
-            Choose a cluster output from your Data Panel to use with this method.
+            Select the clustering output to be visualized
+    min_features :
+        ui-name : |
+            Minimum Number of Features 
+        short-hint : |
+            Display at least this many features while making sure that all the related clusters are shown in full in the heatmap.
+    figure_object :
+        ui-name : |
+            Output Figure Object
+        short-hint : |
+            Output figure object
+    fold_change :
+        ui-name : |
+            Fold Change Plot
+        short-hint : |
+            Select if you want fold change plot. By default, heatmap shows original expression values instead of log2 fold change values
+    control_condition :
+        ui-name : |
+            Control Condition
+        short-hint : |
+            Name of the control condition. Default is the name of first sample.
     quantile:
         ui-name : |
             Quantile Level
         short-hint : |
-            Santdard deviation quantile of log2 fold change given a cluster
+            Standard deviation quantile of log2 fold change for a given cluster.
         long-hint  : |
-            1.0 means largest std. of log2 fold change and 0.5 mean median lo2 fold change std. given a cluster
-    figure_object :
-        ui-name : |
-            Output figure object name
-        short-hint : |
-            Provide name for the output FigureProperties object
-        long-hint  : |
-            Provide name for the output FigureProperties object
+            Quantile level of 1 means largest log2 fold change standard deviation, 0 means smallest, and 0.5 means median. Default is 0.75.
     quantile_weight :
         ui-name : |
             Quantile Weight
@@ -55,43 +66,23 @@ parameters :
             Provide a relative weight for normalied quantile std. over normalized mean correlation of a cluster
         long-hint  : |
             1.0 means we treat normalized mean correlation to be equal weight to normalized quantile std. and 0.0 means we only consider normalized mean correlation for cluster selection criteria. Please refer to description for more details on normalization.
-    min_features :
-        ui-name : |
-            Minimum Number of Features 
-        short-hint : |
-            Provide the minimum number of features to visualize
-        long-hint  : |
-            Provide the minimum number of features to visualize and this method will return features as close as possible to this minimum number of features.
-    control_condition :
-        ui-name : |
-            Input control condition name (Optional)
-        short-hint : |
-            Provide the name for control condition
-        long-hint  : |
-            Provide the name for control condition. If not provided, it will use the first sample as a control condition.
-    fold_change :
-        ui-name : |
-            Fold Change Plot
-        short-hint : |
-            Select if you want fold change plot
-        long-hint  : |
-            Select if you want fold change plot. Otherwise, it will show original expression level plot
     fold_cutoff :
         ui-name : |
-            Fold Cutoff
+            Fold Normalization Option
         short-hint : |
-            Select if you want fold change to be cutoff within fold_change_range
-        long-hint  : |
-            Select if you want fold change to be cutoff within fold_change_range. For instance, log2 fold change ratios are  4.0 and 8.0 and the fold change range is 2, then both of them will be forced to be 2.0. If not selected, then each feature will be normalized within fold_change_range.  For instance, log2 fold change ratios are 4.0 and 8.0 and 8.0 is the maximum value among the conditions of the feature, then it will force 1.0 and 2.0 for fold change range 2.0.
+            Select how you would like to normalize (cutoff or rescale) the log2 fold change values to +/-Fold Normalization Range around zero. Default is cutoff.
     fold_change_range :
         ui-name : |
-            Fold Change Range
+            Fold Normalization Range
         short-hint : |
-            Provide fold change range
-        long-hint  : |
-            2.0 means the fold change will be ranged from -2 to 2. 1.0 means the fold change will be ranged from -1 to 1.0
+            The +/- range around zero within which all log2 fold change values must lie. Default is +/-2.
 description : |
-    <p>This method display multi-cluster heatmap of expressed genes.</p>
+    <p> This method displays multi-cluster heatmap of expressed genes. The user can modulate the output of the heatmap by varying the minimum number of features required while making sure that all the related clusters are shown in full in the heatmap. The heatmap shows original expression values by default.</p>
+
+    <p> The advanced options allow the user to enable the display log2 fold change values in the heatmap. In the later case, the user can further select the quantile level of the standard deviation of log2 fold change, quantile weight, fold normalization option and the fold normalization range so that the selected clusters are most coherent with respect to features and most diverse with respect to conditions.</p> 
+
+    <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
+    Shinjae Yoo, Fei He, Sunita Kumari, Priya Ranjan, Srividya Ramakrishnan, Jim Thomason, Vivek Kumar</p>
      
     <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
 
