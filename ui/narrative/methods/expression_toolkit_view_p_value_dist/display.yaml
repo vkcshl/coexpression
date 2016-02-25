@@ -3,7 +3,7 @@
 #
 name     : View P-value Distribution for Differential Expression
 tooltip  : |
-    View and explore the P-value distribution to help user filter the expression matrix based on P-value cutoff and number of features.
+    Display the P-value distribution of differentially expressed genes to filter an expression matrix based on P-value cutoff or number of features.
 
 screenshots :
     []
@@ -57,7 +57,7 @@ description : |
     </ul></p>
     
     <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
-    Shinjae Yoo, Fei He, Paramvir Dehal, Roman Sutormin, Michael Sneddon, Srividya Ramakrishnan, Pavel Novichkov, Keith Keller.</p>
+    Shinjae Yoo, Fei He, Sunita Kumari, Priya Ranjan, Srividya Ramakrishnan, Jim Thomason, Vivek Kumar</p>
     
     <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
 
