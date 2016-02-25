@@ -22,7 +22,7 @@
     }, {
       "id": "fold_change",
       "optional":false,
-      "advanced":false,
+      "advanced":true,
       "allow_multiple":false,
       "default_values":[1],
       "field_type" : "checkbox",
@@ -84,7 +84,7 @@
     }, {
       "id" : "min_features",
       "optional" : true,
-      "advanced" : true,
+      "advanced" : false,
       "allow_multiple" : false,
       "default_values" : [ 200 ],
       "field_type" : "text",
@@ -94,7 +94,7 @@
     }, {
       "id" : "control_condition",
       "optional" : true,
-      "advanced" : false,
+      "advanced" : true,
       "allow_multiple" : false,
       "default_values" : [ "" ],
       "field_type" : "text",
