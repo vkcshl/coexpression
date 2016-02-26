@@ -1,9 +1,9 @@
 #
 # Define basic display information
 #
-name     : Identify Differentially Expressed Genes
+name     : Filter Expression Matrix
 tooltip  : |
-    Filter an Expression Matrix to show differentially expressed genes.
+    Filter differentially expressed genes from an expression matrix using either log odds ratio or ANalysis Of VAriance (ANOVA) algorithms.
 
 screenshots :
     []
@@ -78,7 +78,7 @@ description : |
     </ul></p>
     
     <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
-    Shinjae Yoo, Paramvir Dehal, Roman Sutormin, Michael Sneddon, Srividya Ramakrishnan, Pavel Novichkov, Keith Keller.</p>
+    Shinjae Yoo, Paramvir Dehal, Roman Sutormin, Michael Sneddon, Srividya Ramakrishnan, Pavel Novichkov, Keith Keller, Sunita Kumari, Priya Ranjan, Fei He, Jim Thomason, Vivek Kumar.</p>
     
     <p>For questions, <a href="mailto:help@kbase.us">e-mail help@kbase.us</a></p>
 

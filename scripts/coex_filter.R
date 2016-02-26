@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName="",sample_index,resp='y',tsv='y', genelistFileName = 'selected.txt'){
+coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName="",sample_index,resp='y',tsv='y', genelistFileName = 'selected.txt', plotfn = 'pv_distribution.png', jsonfn = 'pv_distribution.json'){
   if (is.na(sample_index[1])) { sample_index = rep(c(1:(dim(data)[2]/2)), each = 2) }
   if (is.na(p_threshold)) { p_threshold = 0.05 }
   if (is.na(topnumber)) { topnumber = 0 }
@@ -73,6 +73,26 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
   if (is.na(outFileName)) {
     outFileName = "Gene_expression_data_preprocessed_for_clustering.csv"
   }  
+
+
+#generate a plot to show the distribution of p-values. Added by Fei, Jan 21, 2016
+  iw=as.matrix(gene_p)
+  iw=-log10(iw)
+  png(filename=plotfn)
+  hist(iw,50,main='Histogram of P-values',xlab='-log10(P-value)',col='green')
+  dev.off()
+#end
+  rownames(iw) = genelist
+  colnames(iw) = c('p-value')
+  #iwjs = toJSON(as.data.frame((iw)))
+  datas = toJSON((t(iw)))
+  column_ids = toJSON(genelist)
+  js = paste('{"name" : "Histogram of P-values", "row_labels":["p-value"], "column_labels":', column_ids, ',"data":', datas, "}")
+  
+  write(js, jsonfn)
+
+
+
   if(tsv == 'y') {
     write.table(data_filter, file = outFileName, sep="\t", row.names = TRUE)
   } else {
@@ -88,6 +108,7 @@ coex_filter = function(data,method="lor",p_threshold=1.0,topnumber=0,outFileName
 
 # argument parsing
 suppressPackageStartupMessages(library("optparse"))
+suppressPackageStartupMessages(library("jsonlite"))
 option_list = list( 
   make_option(c("-i", "--input"), dest = "file_name", type = "character", 
               help = "REQUIRED: Input file that stores original gene expression data matrix. Each row corresponds to a gene, and each column corresponds to a sample. The column names are sample names. The row names are gene names."), 
@@ -110,6 +131,10 @@ option_list = list(
               help = "Use the default action when dealing with replicates?  [y/n]  (Default is 'y')"),
   make_option(c("-x", "--genelistFileName"), type = "character", default = 'selected.txt', 
               help = "Output selected gene list file name. [default \"%default\"]"), 
+  make_option(c("-l", "--plotpv"), type = "character", default = 'pv_distribution.png', 
+              help = "Output p-value distribution file name. [default \"%default\"]"), 
+  make_option(c("-j", "--jsonpv"), type = "character", default = 'pv_distribution.json', 
+              help = "Output p-value list json file name. [default \"%default\"]"), 
   make_option(c("-t", "--tab_delim"),type="character",default='n',
               help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 )
@@ -147,6 +172,8 @@ hasReplicates = opt$has_replicates
 defaultAction = opt$default_action
 tab_delim = opt$tab_delim
 glfn = opt$genelistFileName
+plotfn = opt$plotpv
+jsonfn = opt$jsonpv
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -203,4 +230,4 @@ if (is.na(sample_index)) {
   }
 }
 # Running the function
-coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim, genelistFileName = glfn)
+coex_filter(data, method = method, p_threshold = p_threshold, topnumber = topnumber, sample_index = sample_index, outFileName = outFileName, resp = resp, tsv=tab_delim, genelistFileName = glfn, plotfn = plotfn, jsonfn = jsonfn)

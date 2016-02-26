@@ -1,0 +1,181 @@
+{
+  "name" : "View Multi-cluster Heatmap",
+  "ver" : "1.0.0",
+  "authors" : [ ],
+  "contact" : "help@kbase.us",
+  "visble" : true,
+  "categories" : ["active"],
+  "widgets" : {
+    "input" : null,
+    "output" : "kbaseFigureObjectHeatmap"
+  },
+  "parameters" : [ {
+      "id" : "cluster_object",
+      "optional" : false,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : [ "KBaseFeatureValues.FeatureClusters" ]
+      }
+    }, {
+      "id": "fold_change",
+      "optional":false,
+      "advanced":true,
+      "allow_multiple":false,
+      "default_values":[1],
+      "field_type" : "checkbox",
+      "checkbox_options":{
+        "checked_value": 1,
+        "unchecked_value": 0
+      }
+    }, 
+    {
+      "id" : "fold_cutoff",
+      "optional" : false,
+      "advanced" : true,
+      "allow_multiple" : false,
+      "default_values" : [ 1 ],
+      "field_type" : "dropdown",
+      "dropdown_options":{
+          "options": [
+              {
+                  "value": 1,
+                  "display": "Cutoff"
+              },
+              {
+                  "value": 0,
+                  "display": "Rescale"
+              }
+          ]
+      }
+    },
+    {
+      "id": "fold_change_range",
+      "optional":true,
+      "advanced":true,
+      "allow_multiple":false,
+      "default_values":[2.0],
+      "field_type" : "text",
+      "text_options" : {
+        "validate_as" : "float"
+      }
+    }, {
+      "id" : "quantile",
+      "optional" : true,
+      "advanced" : true,
+      "allow_multiple" : false,
+      "default_values" : [ 0.75 ],
+      "field_type" : "text",
+      "text_options" : {
+        "validate_as" : "float"
+      }
+    }, {
+      "id" : "quantile_weight",
+      "optional" : true,
+      "advanced" : true,
+      "allow_multiple" : false,
+      "default_values" : [ 1.0 ],
+      "field_type" : "text",
+      "text_options" : {
+        "validate_as" : "float"
+      }
+    }, {
+      "id" : "min_features",
+      "optional" : true,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ 200 ],
+      "field_type" : "text",
+      "text_options" : {
+        "validate_as" : "int"
+      }
+    }, {
+      "id" : "control_condition",
+      "optional" : true,
+      "advanced" : true,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : [ ]
+      }
+    }, {
+      "id" : "figure_object",
+      "optional" : false,
+      "advanced" : false,
+      "allow_multiple" : false,
+      "default_values" : [ "" ],
+      "field_type" : "text",
+      "text_options" : {
+        "valid_ws_types" : [ ]
+      }
+    }
+
+  ],
+  "behavior" : {
+    "service-mapping" : {
+      "url" : "",
+      "name" : "CoExpression",
+      "method" : "view_heatmap",
+      "input_mapping" : [
+        {
+          "input_parameter" : "cluster_object",
+          "target_property" : "object_name"
+        },
+        {
+          "input_parameter" : "min_features",
+          "target_property" : "min_features"
+        },
+        {
+          "input_parameter" : "quantile",
+          "target_property" : "quantile"
+        },
+        {
+          "input_parameter" : "quantile_weight",
+          "target_property" : "quantile_weight"
+        },
+        {
+          "input_parameter" : "figure_object",
+          "target_property" : "out_figure_object_name"
+        },
+        {
+          "constant_value" : 1,
+          "target_property" : "use_norm_weight"
+        },
+        {
+          "input_parameter" : "control_condition",
+          "target_property" : "control_condition"
+        },
+        {
+          "input_parameter" : "fold_change",
+          "target_property" : "fold_change"
+        },
+        {
+          "input_parameter" : "fold_cutoff",
+          "target_property" : "fold_cutoff"
+        },
+        {
+          "narrative_system_variable": "workspace",
+          "target_property" : "workspace_name"
+        }
+      ],
+      "output_mapping" : [
+        {
+          "input_parameter": "figure_object",
+          "target_property": "expression_object"
+        },
+        {
+          "narrative_system_variable": "workspace",
+          "target_property": "workspace"
+        },
+        {
+          "service_method_output_path": [],
+          "target_property": "job_id"
+        }
+      ]
+    }
+  },
+  "job_id_output_field" : "docker"
+}

@@ -1,12 +1,21 @@
 #!/usr/bin/env Rscript
 
+# borrowed from FV
+mean_m = function(vec){
+    vec[as.vector(is.nan(vec))] <- NA
+    n <- sum(!is.na(vec))
+    summ <- sum(vec,na.rm=TRUE)
+    summ/n
+}
+
+
 invR = function(p, df) {
   t = qt(p/2, df, lower.tail = FALSE)
   r = sqrt(t^2 / (df + t^2))
   return (r)
 }
 
-coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple', output_type = 'edge', outFileName = "", corr_thld = NA, p_thld = NULL, minRsq = 0.8, maxmediank = 40, maxpower = 50) {
+coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple', output_type = 'edge', outFileName = "", corr_thld = NA, p_thld = NULL, minRsq = 0.8, maxmediank = 40, maxpower = 50, plotfn = 'power_distribution.png', jsonfn = 'power_distribution.json') {
   if (is.na(method)) { method = 'simple' }
   if (is.na(output_type)) { method = 'edge' }
   if (is.na(corr_thld) && is.null(p_thld)) { corr_thld = 0.75 }
@@ -29,15 +38,31 @@ coex_net = function(data, geneList1 = NULL, geneList2 = NULL, method = 'simple',
     suppressPackageStartupMessages(library('WGCNA', quiet = TRUE)); options(stringsAsFactors=FALSE)
     allowWGCNAThreads()
     powers = c(1:maxpower)
+    #powers = c(c(1:20),seq(from=1, to=20,by=2))
+    #print(powers)
     sft = pickSoftThreshold(datExpr, powerVector = powers, networkType = "signed", verbose = 0)  
     sft_table = sft$fitIndices
     select_cond = sft_table$SFT.R.sq > minRsq & sft_table$median.k <= maxmediank
     if (sum(select_cond) == 0) { stop("No satisfied power found. Please decrease minRsq or increase maxpower.") }
     softPower = min(sft_table[select_cond, 'Power'])
     adjmat = adjacency(datExpr, power = softPower, type = 'signed', corFnc = "cor", corOptions = "use = 'p',method = 'pearson'")
+  
+  
+#add some code to visualize the effect of different powers. By Fei, Jan 22, 2016
+    png(filename='scale-free-fit.png')
+    plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],xlab='Power', ylab='Scale Free Topology Model Fit,R^2', type="n",main = paste("Scale independence"))
+    text(sft$fitIndices[,1], -sign(sft$fitIndices[,3])*sft$fitIndices[,2],labels=powers,col="red");
+    dev.off()
+#end
+    
+
+  
+  
   } else {
     stop("Please indicate a correct method. See help")
   }
+
+
   
   if (output_type == 'edge' || output_type == 'e') {
     if (is.na(corr_thld)) {
@@ -100,7 +125,7 @@ filter_data = function(data, genes1, genes2) {
   return (data)
 }
 
-coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSize = 30, detectCutHeight = 0.99, tsv ='y', data) {
+coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSize = 30, detectCutHeight = 0.99, tsv ='y', statFileName = 'cluster_stat.tsv', data) {
   if (is.na(method)) { method = 'WGCNA' }
   if (is.na(minModuleSize)) { minModuleSize = 30 }
   if (is.na(detectCutHeight)) { detectCutHeight = 0.99 }
@@ -125,6 +150,8 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
     TOM = TOMsimilarity(adjmat, verbose = 0)
     dissTOM = 1 - TOM
     geneTree = flashClust(as.dist(dissTOM), method = "average")
+    # rare case exception handling
+    geneTree$height = round(geneTree$height,6)
     dynamicMods = cutreeDynamic(dendro = geneTree, cutHeight = detectCutHeight, deepSplit = TRUE, minClusterSize = minModuleSize, method = 'tree')
     modulenames = labels2colors(dynamicMods)
     #par(pty="m");plotDendroAndColors(geneTree, dynamicColors,rowText=dynamicColors, dendroLabels = FALSE, hang = 0.03, addGuide = TRUE, guideHang = 0.05, main = "Gene dendrogram and module colors")
@@ -146,6 +173,23 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   x = eigen_adjmat; x[upper.tri(eigen_adjmat)] = 0; mod_edgelist = melt(x); mod_edgelist = mod_edgelist[mod_edgelist$value!=0&mod_edgelist[,1]!=mod_edgelist[,2],]
   colnames(mod_edgelist)=c('node 1','node 2','weight')
   
+  module = unique(modulenames)
+
+  
+  mcor = c()
+  msec = c()
+  for (mn in module) {
+    print (mn)
+    mcor = c(mcor, mean(adjmat[modulenames == mn,modulenames == mn], na.rm=TRUE))
+    curdata <- as.matrix(data[modulenames == mn,])
+    MSEall <- mean_m((curdata-mean_m(curdata))^2)
+    cmeans <- colMeans(curdata,na.rm=TRUE)
+    csds <- apply(curdata,2,sd,na.rm=TRUE)
+    msec = c(msec, mean_m((sweep(curdata,2,cmeans))^2/MSEall))
+  }
+  cs = data.frame(module, mcor, msec)
+  print (cs)
+
   if(tsv == 'y') {
     write.table(mod_edgelist, file = paste('module_network_edgelist_method=', method, '.tsv'), sep="\t", row.names = F) 
   } else {
@@ -157,6 +201,7 @@ coex_cluster = function(adjmat, method = 'WGCNA', outFileName = "", minModuleSiz
   }
   if(tsv == 'y') {
     write.table(clusterInfo, file = outFileName, row.names = FALSE, sep="\t")  
+    write.table(cs, file = statFileName, row.names = FALSE, sep="\t")  
   } else {
     write.csv(clusterInfo, file = outFileName, row.names = FALSE)  
   }
@@ -187,6 +232,12 @@ option_list=list(
               help="Maximum heights to join modules in clustering. [default %default]"), 
   make_option(c("-o", "--output"),dest="outFileName",type="character",default="coex_modules.csv",
               help="Output file that stores the clustering results. The first column is gene, and the second column is the corresponding module. [default \"%default\"]"),
+  make_option(c("-l", "--plotpv"), type = "character", default = 'power_distribution.png', 
+              help = "Output p-value distribution file name. [default \"%default\"]"), 
+  make_option(c("-j", "--jsonpv"), type = "character", default = 'power_distribution.json', 
+              help = "Output p-value list json file name. [default \"%default\"]"), 
+  make_option(c("-m", "--clusterStat"), type = "character", default = 'cluster_stat.tsv', 
+              help = "Output cluster statistics file name. [default \"%default\"]"), 
   make_option(c("-t", "--tab_delim"),type="character",default='n',
               help = "Use tab as a deliminator?  [y/n]  (Default is 'n')")
 ) 
@@ -223,6 +274,9 @@ minRsq = opt$minRsq
 maxmediank = opt$maxmediank
 maxpower = opt$maxpower
 tab_delim = opt$tab_delim
+plotfn = opt$plotpv
+jsonfn = opt$jsonpv
+outStatFN = opt$clusterStat
 if (opt$help) {
   print_help(opt_obj)
   quit(status = 0)
@@ -271,5 +325,5 @@ if (!is.null(g1file) && !is.null(g2file))
 
 #coex_cluster2(data=data,outFileName=outFileName,clust_method=clust_method,net_method=net_method,minRsq=minRsq,maxmediank=maxmediank,maxpower=maxpower,minModuleSize=minModuleSize,detectCutHeight=detectCutHeight)
 
-adjmat = coex_net(data, geneList1 = g1, geneList2 = g2, output_type = 'adjmat', method = net_method, minRsq = minRsq, maxmediank = maxmediank, maxpower = maxpower)
-coex_cluster(adjmat, method = clust_method, outFileName = outFileName, minModuleSize = minModuleSize, detectCutHeight = detectCutHeight, tsv=tab_delim, data=data)
+adjmat = coex_net(data, geneList1 = g1, geneList2 = g2, output_type = 'adjmat', method = net_method, minRsq = minRsq, maxmediank = maxmediank, maxpower = maxpower, plotfn = plotfn, jsonfn = jsonfn)
+coex_cluster(adjmat, method = clust_method, outFileName = outFileName, minModuleSize = minModuleSize, detectCutHeight = detectCutHeight, tsv=tab_delim, statFileName= outStatFN, data=data)

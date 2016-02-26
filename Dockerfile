@@ -25,6 +25,7 @@ RUN \
 # -----------------------------------------
 RUN apt-get update && apt-get install -y unzip gcc bzip2 ncurses-dev
 RUN pip install mpipe
+RUN pip install pandas numpy
 WORKDIR /kb/module
 COPY ./deps /kb/deps
 ### R install docker file: https://github.com/rocker-org/rocker/blob/master/rstudio/Dockerfile
@@ -34,6 +35,10 @@ COPY ./deps /kb/deps
 #  bash /kb/deps/WGCNA/install-r-packages.sh 
 
 COPY ./ /kb/module
+RUN \
+  . /kb/dev_container/user-env.sh && \
+  cd /kb/module && \
+  make update-R 
 RUN \
   . /kb/dev_container/user-env.sh && \
   cd /kb/module && \

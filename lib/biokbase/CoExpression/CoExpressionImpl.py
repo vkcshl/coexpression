@@ -12,9 +12,12 @@ import subprocess
 from os import environ
 from ConfigParser import ConfigParser
 import re
+from collections import OrderedDict
 
 # 3rd party imports
 import requests
+import pandas as pd
+import numpy as np 
 
 # KBase imports
 import biokbase.workspace.client 
@@ -49,7 +52,12 @@ def empty_cluster_results(err_msg, expr, workspace_service_url, param, logger, w
 
     ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'KBaseFeatureValues.FeatureClusters',
                                                                           'data' : clrst,
+
                                                                           'name' : (param['out_object_name'])}]})
+
+def clean_up_expr_matrix(fn, logger):
+    pass
+    
 
 #END_HEADER
 
@@ -62,14 +70,10 @@ class CoExpression:
     Module Description:
     Co-Expression Service APIs 
 
- This module provides services for plant expression data in support of the coexpression
- network and ontology driven data needs of the plant sciences community. This version of
- the modules supports retrieval of the following information:
- 1. Retrieval of GEO sample ID list for given EO (environmental ontology) and/or PO (plant ontology -plant tissues/organs of interest).
- 2. Retrieval of the expression values for given GEO sample ID list.  
- 3. For given expression values tables, it computes co-expression clusters or network (CLI only).
-
-It will serve queries for tissue or condition specific co-expression network for biologically interesting genes/samples. Users can search differentially expressed genes in different tissues or in numerous experimental conditions or treatments (e.g various biotic or abiotic stresses). Currently the metadata annotation is provided for a subset of gene expression experiments from the NCBI GEO microarray experiments for Arabidopsis and Poplar. The samples of these experiments are manually annotated using plant ontology (PO) [http://www.plantontology.org/] and environment ontology (EO) [http://obo.cvs.sourceforge.net/viewvc/obo/obo/ontology/phenotype/environment/environment_ontology.obo]
+ This module provides services in support of the coexpression network. 
+ The modules supports retrieval of the following information:
+ 1. Identify differentially expressed genes
+ 2. WGCNA clustering
     '''
 
     ######## WARNING FOR GEVENT USERS #######
@@ -91,7 +95,9 @@ It will serve queries for tissue or condition specific co-expression network for
     COEX_CLUSTER = 'coex_cluster2'
     FLTRD_FN = 'filtered.tsv'
     CLSTR_FN = 'clusters.tsv'
+    CSTAT_FN = 'cluster_stat.tsv'
     FINAL_FN = 'filtered.json'
+    PVFDT_FN = 'pv_distribution.json'
     GENELST_FN = 'selected.tsv'
     __WS_URL = 'https://ci.kbase.us/services/ws'
     __HS_URL = 'https://ci.kbase.us/services/handle_service'
@@ -104,7 +110,7 @@ It will serve queries for tissue or condition specific co-expression network for
     # be found
     def __init__(self, config):
         #BEGIN_CONSTRUCTOR
-        pprint(config)
+        #pprint(config)
         if 'ws_url' in config:
               self.__WS_URL = config['ws_url']
         if 'shock_url' in config:
@@ -136,6 +142,129 @@ It will serve queries for tissue or condition specific co-expression network for
         self.logger.info("Logger was set")
         #END_CONSTRUCTOR
         pass
+
+    def diff_p_distribution(self, ctx, args):
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN diff_p_distribution
+        try:
+            os.makedirs(self.RAWEXPR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FLTRD_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FINAL_DIR)
+        except:
+            pass
+ 
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
+        
+        result = {}
+        self.logger.info("Starting conversion of KBaseFeatureValues.ExpressionMatrix to TSV")
+        token = ctx['token']
+ 
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+
+        param = args
+ 
+ 
+        from biokbase.workspace.client import Workspace
+        ws = Workspace(url=self.__WS_URL, token=token)
+        expr = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+ 
+ 
+        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+                                          '--workspace_name', param['workspace_name'],
+                                          '--object_name', param['object_name'],
+                                          '--working_directory', self.RAWEXPR_DIR,
+                                          '--output_file_name', self.EXPRESS_FN
+                              ]
+ 
+        # need shell in this case because the java code is depending on finding the KBase token in the environment
+        #  -- copied from FVE_2_TSV
+        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+ 
+        self.logger.info("Identifying differentially expressed genes")
+ 
+        ## Prepare sample file
+        # detect num of columns
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 'r') as f:
+          fl = f.readline()
+        ncol = len(fl.split('\t'))
+        
+        # force to use ANOVA if the number of sample is two
+        if(ncol == 3): param['method'] = 'anova'
+ 
+        with open("{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN), 'wt') as s:
+          s.write("0")
+          for j in range(1,ncol-1):
+            s.write("\t{0}".format(j))
+          s.write("\n")
+ 
+ 
+        ## Run coex_filter
+        cmd_coex_filter = [self.COEX_FILTER, '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), '-o', "{0}/{1}".format(self.FLTRD_DIR, self.FLTRD_FN),
+                           '-m', param['method'], '-n', '10', '-s', "{0}/{1}".format(self.RAWEXPR_DIR, self.SAMPLE_FN),
+                           '-x', "{0}/{1}".format(self.RAWEXPR_DIR, self.GENELST_FN), '-t', 'y', '-j', self.PVFDT_FN]
+        if 'num_features' in param:
+          cmd_coex_filter.append("-n")
+          cmd_coex_filter.append(str(param['num_features']))
+ 
+        if 'p_value' in param:
+          cmd_coex_filter.append("-p")
+          cmd_coex_filter.append(str(param['p_value']))
+ 
+ 
+        tool_process = subprocess.Popen(cmd_coex_filter, stderr=subprocess.PIPE)
+        stdout, stderr = tool_process.communicate()
+        
+        if stdout is not None and len(stdout) > 0:
+            self.logger.info(stdout)
+ 
+        if stderr is not None and len(stderr) > 0:
+            self.logger.info(stderr)
+ 
+        ## loading pvalue distribution FDT
+        pvfdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
+        pvfdt = OrderedDict(pvfdt)
+        with open(self.PVFDT_FN, 'r') as myfile:
+           pvfdt = json.load(myfile)
+        data_obj_name = "{0}.fdt".format(param['out_figure_object_name'])
+        pvfdt['id'] = data_obj_name
+ 
+ 
+        fig_properties = {"xlabel" : "-log2(p-value)", "ylabel" : "Number of features", "xlog_mode" : "-log2", "ylog_mode" : "none", "title" : "Histogram of P-values", "plot_type" : "histogram"}
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+                                                                              'data' : pvfdt,
+                                                                              'name' : data_obj_name}]})
+
+        data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
+        fig_properties['data_ref'] = data_ref
+
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'CoExpression.FigureProperties',
+                                                                              'data' : fig_properties,
+                                                                              'name' : (param['out_figure_object_name'])}]})
+        result = fig_properties
+        #END diff_p_distribution
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method diff_p_distribution return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
 
     def filter_genes(self, ctx, args):
         # ctx is the context object
@@ -423,7 +552,7 @@ It will serve queries for tissue or condition specific co-expression network for
         ## Run coex_cluster
         cmd_coex_cluster = [self.COEX_CLUSTER, '-t', 'y',
                            '-i', "{0}/{1}".format(self.RAWEXPR_DIR, self.EXPRESS_FN), 
-                           '-o', "{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN)]
+                           '-o', "{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN), '-m', "{0}/{1}".format(self.CLSTR_DIR, self.CSTAT_FN) ]
  
         for p in ['net_method', 'minRsq', 'maxmediank', 'maxpower', 'clust_method', 'minModuleSize', 'detectCutHeight']:
            if p in param:
@@ -457,10 +586,16 @@ It will serve queries for tissue or condition specific co-expression network for
  
         # parse clustering results
         cid2genelist = {}
+        cid2stat = {}
+        with open("{0}/{1}".format(self.CLSTR_DIR, self.CSTAT_FN),'r') as glh:
+            glh.readline() # skip header
+            for line in glh:
+                cluster, mcor, msec = line.rstrip().replace('"','').split("\t")
+                cid2stat[cluster]= [mcor, msec]
         with open("{0}/{1}".format(self.CLSTR_DIR, self.CLSTR_FN),'r') as glh:
             glh.readline() # skip header
             for line in glh:
-                gene, cluster = line.replace('"','').split("\t")
+                gene, cluster = line.rstrip().replace('"','').split("\t")
                 if cluster not in cid2genelist:
                     cid2genelist[cluster] = []
                 cid2genelist[cluster].append(gene)
@@ -473,9 +608,8 @@ It will serve queries for tissue or condition specific co-expression network for
         self.logger.info("Uploading the results onto WS")
         feature_clusters = []
         for cluster in cid2genelist:
-            feature_clusters.append( { "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
-                
- 
+            feature_clusters.append( {"meancor": float(cid2stat[cluster][0]), "msec": float(cid2stat[cluster][0]), "id_to_pos" : { gene : pos_index[gene] for gene in cid2genelist[cluster]}})
+
         ## Upload Clusters
         feature_clusters ={"original_data": "{0}/{1}".format(param['workspace_name'],param['object_name']),
                            "feature_clusters": feature_clusters}
@@ -489,6 +623,294 @@ It will serve queries for tissue or condition specific co-expression network for
         # At some point might do deeper type checking...
         if not isinstance(result, dict):
             raise ValueError('Method const_coex_net_clust return value ' +
+                             'result is not type dict as required.')
+        # return the results
+        return [result]
+
+    def view_heatmap(self, ctx, args):
+        # ctx is the context object
+        # return variables are: result
+        #BEGIN view_heatmap
+        try:
+            os.makedirs(self.RAWEXPR_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FLTRD_DIR)
+        except:
+            pass
+        try:
+            os.makedirs(self.FINAL_DIR)
+        except:
+            pass
+ 
+        if self.logger is None:
+            self.logger = script_utils.stderrlogger(__file__)
+        
+        result = {}
+        self.logger.info("Loading data")
+        token = ctx['token']
+ 
+        eenv = os.environ.copy()
+        eenv['KB_AUTH_TOKEN'] = token
+
+        param = args
+ 
+ 
+        from biokbase.workspace.client import Workspace
+        ws = Workspace(url=self.__WS_URL, token=token)
+        fc = ws.get_objects([{'workspace': param['workspace_name'], 'name' : param['object_name']}])[0]['data']
+        if 'original_data' not in fc:
+            raise Exception("FeatureCluster object does not have information for the original ExpressionMatrix")
+        oexpr = ws.get_objects([{ 'ref' : fc['original_data']}])[0]
+
+        df2 = pd.DataFrame(oexpr['data']['data']['values'], index=oexpr['data']['data']['row_ids'], columns=oexpr['data']['data']['col_ids'])
+#        cmd_dowload_cvt_tsv = [self.FVE_2_TSV, '--workspace_service_url', self.__WS_URL, 
+#                                          '--workspace_name', oexpr['info'][7],
+#                                          '--object_name', oexpr['info'][1],
+#                                          '--working_directory', self.RAWEXPR_DIR,
+#                                          '--output_file_name', self.EXPRESS_FN
+#                              ]
+# 
+#        # need shell in this case because the java code is depending on finding the KBase token in the environment
+#        #  -- copied from FVE_2_TSV
+#        tool_process = subprocess.Popen(" ".join(cmd_dowload_cvt_tsv), stderr=subprocess.PIPE, shell=True, env=eenv)
+#        stdout, stderr = tool_process.communicate()
+#        
+#        if stdout is not None and len(stdout) > 0:
+#            self.logger.info(stdout)
+# 
+#        if stderr is not None and len(stderr) > 0:
+#            self.logger.info(stderr)
+# 
+#        df = pd.read_csv("{0}/{1}".format(self.RAWEXPR_DIR,self.EXPRESS_FN), sep='\t')
+#        df2 = df[df.columns[1:]]
+#        rn = df[df.columns[0]]
+#        df2.index = rn
+
+        # L2 normalization
+        df3 = df2.div(df2.pow(2).sum(axis=1).pow(0.5), axis=0)
+
+        # type - ? level, ratio, log-ratio  <---> "untransformed"
+        # scale - ? probably: raw, ln, log2, log10
+        self.logger.info("Expression matrix type: {0}, scale: {1}".format(oexpr['data']['type'],oexpr['data']['scale'] ))
+        if oexpr['data']['type'] == 'level' or oexpr['data']['type'] == 'untransformed': # need to compute fold changes
+            if 'scale' not in oexpr['data'] or oexpr['data']['scale'] == 'raw' or oexpr['data']['scale'] == "1.0":
+              factor = 0.125
+              fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
+            else:
+              fc_df = df2
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0))
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0))
+              if oexpr['data']['scale'] == "log10":
+                  fc_df = fc_df/np.log10(2)
+              elif oexpr['data']['scale'] == "ln":
+                  fc_df = fc_df/np.log(2)
+              else:
+                  pass
+        elif oexpr['data']['type'] == 'ratio':
+            fc_cf = df2.apply(np.log2)
+        elif oexpr['data']['type'] == 'log-ratio':
+            fc_cf = df2
+            if oexpr['data']['scale'] == "log10":
+                fc_df = fc_df/np.log10(2)
+            elif oexpr['data']['scale'] == "ln":
+                fc_df = fc_df/np.log(2)
+            else:
+                pass
+
+        else: # do the same thing with simple level or untransformed
+            if 'scale' not in oexpr['data'] or oexpr['data']['scale'] == 'raw' or oexpr['data']['scale'] == "1.0":
+              factor = 0.125
+              fc_df = df2 + df2[df2 !=0].abs().min().min() * factor
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0)).apply(np.log2)
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0)).apply(np.log2)
+            else:
+              fc_df = df2
+              if param['control_condition']  in fc_df.columns:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[param['control_condition']]], axis=0))
+              else:
+                  fc_df = (fc_df.div(fc_df.loc[:,fc_df.columns[0]], axis=0))
+              if oexpr['data']['scale'] == "log10":
+                  fc_df = fc_df/np.log10(2)
+              elif oexpr['data']['scale'] == "ln":
+                  fc_df = fc_df/np.log(2)
+              else:
+                  pass
+       
+        self.logger.info("Compute cluster statistics")
+
+        cl = {}
+        afs = [];
+        cid = 1;
+
+        c_stat = pd.DataFrame()
+        for cluster in fc['feature_clusters']:
+         
+          try: 
+            fs  = cluster['id_to_pos'].keys()
+          except:
+            continue # couldn't find feature_set
+
+          fsn = "Cluster_{0}".format(cid)
+          cid +=1
+          c_stat.loc[fsn,'size'] = len(fs)
+          if 'meancor' in cluster:
+              c_stat.loc[fsn,'mcor'] = cluster['meancor']
+          else:
+            pass
+            # TODO: Add mean cor calculation later
+            #raise Exception("Mean correlation is not included in FeatureCluster object") # now it is NaN
+
+          if 'quantile' in param:
+              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(float(param['quantile']))
+          else:
+              c_stat.loc[fsn,'stdstat'] = fc_df.loc[fs,].std(axis=1).quantile(0.75)
+         
+
+          c1 = df3.loc[fs,].sum(axis=0)
+          if df3.loc[fs,].shape[0] < 1: # empty
+            continue
+          cl[fsn] = fs
+          #afs.extend(fs)
+
+          #c1 = df3.loc[fs,].sum(axis=0)
+          #c1 = c1 / np.sqrt(c1.pow(2).sum())
+          #if(len(cl.keys()) == 1):
+          #  centroids = c1.to_frame(fsn).T
+          #else:
+          #  centroids.loc[fsn] = c1
+
+        # now we have centroids and statistics
+        # let's subselect clusters
+        min_features = 200
+        if 'min_features' in param :
+          min_features = param['min_features']
+        
+        c_stat.loc[:,'nmcor'] = c_stat.loc[:,'mcor'] / c_stat.loc[:,'mcor'].max()
+        c_stat.loc[:,'nstdstat'] = c_stat.loc[:,'stdstat'] / c_stat.loc[:,'stdstat'].max()
+        
+        if 'use_norm_weight' in param and param['use_norm_weight'] != 0:
+            if 'quantile_weight' in param:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'nmcor'] + float(param['quantile_weight']) * c_stat.loc[:,'nstdstat']
+            else:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'nmcor'] + 1.0                             * c_stat.loc[:,'nstdstat']
+        else:
+            if 'quantile_weight' in param:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + float(param['quantile_weight']) * c_stat.loc[:,'stdstat']
+            else:
+                c_stat.loc[:,'weight'] = c_stat.loc[:,'mcor'] + 0.1                             * c_stat.loc[:,'stdstat']
+
+        c_stat.sort_values('weight', inplace=True, ascending=False)
+
+        pprint(c_stat)
+
+        centroids = pd.DataFrame()
+        for i in range(c_stat.shape[0]):
+            fsn = c_stat.index[i]
+            fs = cl[fsn]
+            if i != 0 and len(afs) + len(fs) > min_features :
+                break;
+           
+            afs.extend(fs)
+
+            c1 = df3.loc[fs,].sum(axis=0)
+            c1 = c1 / np.sqrt(c1.pow(2).sum())
+            if(centroids.shape[0] < 1):
+              centroids = c1.to_frame(fsn).T
+            else:
+              centroids.loc[fsn] = c1
+           
+        pprint(centroids)
+        
+        if len(cl.keys()) == 0:
+            raise Exception("No feature ids were mapped to dataset or no clusters were selected")
+        
+        # dataset centroid
+        dc = df3.loc[afs,].sum(axis=0)
+        dc = dc / np.sqrt(dc.pow(2).sum())
+    
+        
+        self.logger.info("Ordering Centroids and Data")
+        # the most far away cluster centroid from dataset centroid
+        fc = (centroids * dc).sum(axis=1).idxmin()
+        # the most far away centroid centroid from fc
+        ffc = (centroids * centroids.loc[fc,]).sum(axis=1).idxmin()
+        
+        # major direction to order on unit ball space
+        md = centroids.loc[ffc,] - centroids.loc[fc,]
+        
+        # unnormalized component of projection to the major direction (ignored md quantities because it is the same to all)
+        corder = (centroids * md).sum(axis=1).sort_values() # cluster order
+        coidx = corder.index
+        
+        dorder =(df3.loc[afs,] * md).sum(axis=1).sort_values() # data order
+        
+        # get first fs table    
+        fig_properties = {"xlabel" : "Conditions", "ylabel" : "Features", "xlog_mode" : "none", "ylog_mode" : "none", "title" : "Log Fold Changes", "plot_type" : "heatmap", 'ygroup': []}
+        fig_properties['ygtick_labels'] = coidx.tolist()
+
+        if 'fold_change' in param and param['fold_change'] == 1:
+            frange = 2
+            if 'fold_change_range' in param:
+                frange = float(param['fold_change_range'])
+            final=fc_df.loc[dorder.loc[cl[coidx[0]],].index,]
+            fig_properties['ygroup'].append(final.shape[0])
+            
+            for i in range(1,len(coidx)):
+                tf = fc_df.loc[dorder.loc[cl[coidx[i]],].index,]
+                fig_properties['ygroup'].append(tf.shape[0])
+                final = final.append(tf)
+
+            if 'fold_cutoff' in param and param['fold_cutoff'] == 1:
+                final[final > frange] = frange
+                final[final < - frange] = - frange
+            else:
+                fc_df0b = final.sub(final.min(axis=1), axis=0)
+                final = (fc_df0b.div(fc_df0b.max(axis=1), axis=0) - 0.5) * 2 * frange
+        else:
+            final=df2.loc[dorder.loc[cl[coidx[0]],].index,]
+            fig_properties['ygroup'].append(final.shape[0])
+            
+            for i in range(1,len(coidx)):
+                tf = df2.loc[dorder.loc[cl[coidx[i]],].index,]
+                fig_properties['ygroup'].append(tf.shape[0])
+                final = final.append(tf)
+        
+        ## loading pvalue distribution FDT
+        fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
+        #fdt = OrderedDict(fdt)
+        fdt['data'] = final.T.as_matrix().tolist() # make sure Transpose
+        fdt['row_labels'] = final.columns.tolist()
+        fdt['column_labels'] = final.index.tolist()
+        # TODO: Add group label later
+        fdt['id'] = "{0}.fdt".format(param['out_figure_object_name'])
+ 
+        self.logger.info("Saving the results")
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'MAK.FloatDataTable',
+                                                                              'data' : fdt,
+                                                                              'name' : "{0}.fdt".format(param['out_figure_object_name'])}]})
+
+        data_ref = "{0}/{1}/{2}".format(sstatus[0][6], sstatus[0][0], sstatus[0][4])
+        fig_properties['data_ref'] = data_ref
+
+        sstatus = ws.save_objects({'workspace' : param['workspace_name'], 'objects' : [{'type' : 'CoExpression.FigureProperties',
+                                                                              'data' : fig_properties,
+                                                                              'name' : (param['out_figure_object_name'])}]})
+        result = fig_properties
+        #END view_heatmap
+
+        # At some point might do deeper type checking...
+        if not isinstance(result, dict):
+            raise ValueError('Method view_heatmap return value ' +
                              'result is not type dict as required.')
         # return the results
         return [result]
