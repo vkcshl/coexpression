@@ -18,7 +18,7 @@ method-suggestions :
     related :
         []
     next :
-        []
+        [expression_toolkit_view_heatmap]
 
 
 #
@@ -70,6 +70,7 @@ parameters :
 description : |
 
     <p>This method allows users to use WGCNA to detect gene clusters from a expression matrix. Begin by selecting or importing both the expression dataset and the genome associated with the expression dataset using the Add Data button. Provide a name for the output set of clusters. Then, Weighted Gene Co-expression Network Analysis (WGCNA) can be performed.</p>
+    <p>Weighted Gene Co-expression Network Analysis (WGCNA) is an algorithmic approach in systems biology to describe the correlation patterns among genes based on large, high-dimensional datasets obtained from RNA-seq or microarray experiments. It clusters similarly correlated genes into groups called modules, which could be further analyzed using functional information such as GO, KEGG, etc. Instead of relating thousands of genes to a sample trait, it tries to capture the relationship between typically a dozen modules and the sample trait.</p>
     <p>For detailed informatoion about WGCNA, see http://labs.genetics.ucla.edu/horvath/CoexpressionNetwork/Rpackages/WGCNA/Tutorials/Simulated-00-Background.pdf</p>
 
     <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
