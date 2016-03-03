@@ -23,7 +23,7 @@ suggestions :
         related :
             []
         next :
-            []
+            [expression_toolkit_cluster_WGCNA]
 
 #
 # Configure the display and description of the parameters
@@ -33,50 +33,41 @@ parameters :
         ui-name : |
             Expression Matrix
         short-hint : |
-            Select the Expression Matrix for filtering differentially expressed genes
+            Input expression matrix 
         long-hint  : |
             Choose an Expression Matrix from your Data Panel to use with this method. You can upload an Expression Matrix into your Narrative by clicking the <i>Add Data</i> button and selecting the <i>Import</i> tab. Please run the method Associate Expression Matrix to Genome Features before running this method. 
     filtered_expression:
         ui-name : |
             Filtered Expression Matrix
         short-hint : |
-            Provide name for the output filtered Expression Matrix
-        long-hint  : |
-            After the method has finished running, an Expression Matrix data object will be added to your data panel. Provide a name for this data object, using only alphanumeric characters and underscores.
+            Output filtered expression matrix
     filtered_featureset :
         ui-name : |
             Filtered FeatureSet
         short-hint : |
-            Provide name for the output filtered FeatureSet object
-        long-hint  : |
-            After the method has finished running, a FeatureSet data object will be added to your data panel. Provide a name for this data object, using only alphanumeric characters and underscores.
+            Output filtered FeatureSet
     method :
         ui-name : |
-            Filtering Method
+            Filter Option
         short-hint : |
-            Select between the two methods to perform differential expression filtering: ANOVA (ANalysis Of VAriance) or Log odd ratio
+            Select the option to perform differential expression filtering: ANOVA (ANalysis Of VAriance) or Log odd ratio. Default is ANOVA.
     num_features :
         ui-name : |
             Number of Features
         short-hint : |
-            Provide the number of features you want to retain
-        long-hint  : |
-            Select either the Number of Features or the P-value Cutoff to filter differentially expressed genes
+            Number of features you want to retain in the filtered expression matrix
     p_value :
         ui-name : |
             P-value Cutoff
         short-hint : |
-            P-value cutoff to select differentially expressed genes
-        long-hint  : |
-            Select either the P-value Cutoff or the Number of Features to filter differentially expressed genes
-
+            P-value cutoff to select differentially expressed genes in the filtered expression matrix
 description : |
-    <p>This method filters differentially expressed genes from the Expression Matrix and generates a FeatureSet and reduced ExpressionMatrix. Begin by selecting or importing both the Expression Matrix to analyze and the Genome associated with the Expression Matrix using the Add Data button. If the Expression Matrix was not associated with a Genome when it was imported, please run the method Associate Expression Matrix to Genome Features on the expression matrix before running this method. Select either of the filtering methods that use the Number of Features, or a P-value cutoff to filter differentially expressed genes. If both the Number of Features and the P-value cutoff are populated, the method will default to using the Number of Features with the selected filtering method as the mode of differentiating the genes. Provide names for the output filtered Expression Matrix and FeatureSet object type and then run the method.</p>
+    <p>This method filters differentially expressed genes from the Expression Matrix and generates a FeatureSet and filtered Expression Matrix. Begin by selecting or importing both the Expression Matrix and the Genome associated with the Expression Matrix using the Add Data button. If the Expression Matrix was not associated with a Genome when it was imported, please run the method <i>Associate Expression Matrix to Genome Features</i> on the Expression Matrix before running this method. Select either of the filter options that use the Number of Features, or a P-value cutoff to filter differentially expressed genes. If both the Number of Features and the P-value cutoff are populated, the method will default to using the Number of Features with the selected filtering method. Provide names for the output filtered Expression Matrix and FeatureSet and then run the method.</p>
      
     <p>Description of filtering methods to do differential Expression: 
         <ul>
         <li>Log odds ratio is a statistical test that calculates the logarithm of the ratio of the odds for regulation to the odds against regulation to measure association between the variables.</li>
-        <li>ANOVA: ANalysis Of VAriance is a statistical test for heterogeneity of means by analysis of group variances.</li>
+        <li>ANOVA (ANalysis Of VAriance) is a statistical test for measurement of heterogeneity of means by analysis of group variances.</li>
     </ul></p>
     
     <p><strong>Team members who developed & deployed algorithm in KBase:</strong>
