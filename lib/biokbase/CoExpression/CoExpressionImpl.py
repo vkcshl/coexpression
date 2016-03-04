@@ -888,6 +888,8 @@ class CoExpression:
         ## loading pvalue distribution FDT
         fdt = {'row_labels' :[], 'column_labels' : [], "data" : [[]]};
         #fdt = OrderedDict(fdt)
+        # Nan to None
+        final = final.where(pd.notnull(final),None)
         fdt['data'] = final.T.as_matrix().tolist() # make sure Transpose
         fdt['row_labels'] = final.columns.tolist()
         fdt['column_labels'] = final.index.tolist()
