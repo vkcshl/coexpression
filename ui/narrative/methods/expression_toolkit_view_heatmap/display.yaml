@@ -38,12 +38,12 @@ parameters :
         ui-name : |
             Minimum Number of Features 
         short-hint : |
-            Display at least this many features while making sure that all the related clusters are shown in full in the heatmap.
+            Minimum number of features to be displayed in the heatmap. It must not be greater than the number of features associated with the expression matrix. The heatmap may display additional features to ensure that all the selected clusters are shown in full.
     figure_object :
         ui-name : |
-            Output Figure Object
+            Output Figure
         short-hint : |
-            Output figure object
+            Name of the multi-cluster heatmap object
     fold_change :
         ui-name : |
             Fold Change Plot
